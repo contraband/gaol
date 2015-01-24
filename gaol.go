@@ -73,8 +73,18 @@ func main() {
 		{
 			Name:  "create",
 			Usage: "create a container",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "rootfs, r",
+					Usage: "rootfs image with which to create the container",
+				},
+			},
 			Action: func(c *cli.Context) {
-				container, err := client(c).Create(garden.ContainerSpec{})
+				rootfs := c.String("rootfs")
+
+				container, err := client(c).Create(garden.ContainerSpec{
+					RootFSPath: rootfs,
+				})
 				failIf(err)
 
 				fmt.Println(container.Handle())

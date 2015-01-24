@@ -80,8 +80,13 @@ func main() {
 			Name:  "destroy",
 			Usage: "destroy a container",
 			Action: func(c *cli.Context) {
-				err := client(c).Destroy(handle(c))
-				failIf(err)
+				client := client(c)
+				handles := c.Args()
+
+				for _, handle := range handles {
+					err := client.Destroy(handle)
+					failIf(err)
+				}
 			},
 		},
 		{

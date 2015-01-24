@@ -7,10 +7,14 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/codegangsta/cli"
+	"github.com/kr/pty"
 	"github.com/pivotal-golang/archiver/compressor"
+	"github.com/pkg/term"
 
 	"github.com/cloudfoundry-incubator/garden"
 	gclient "github.com/cloudfoundry-incubator/garden/client"
@@ -99,6 +103,66 @@ func main() {
 				for _, container := range containers {
 					fmt.Println(container.Handle())
 				}
+			},
+		},
+		{
+			Name:  "shell",
+			Usage: "open a shell inside the running container",
+			Action: func(c *cli.Context) {
+				container, err := client(c).Lookup(handle(c))
+				failIf(err)
+
+				term, err := term.Open(os.Stdin.Name())
+				failIf(err)
+
+				err = term.SetRaw()
+				failIf(err)
+
+				rows, cols, err := pty.Getsize(os.Stdin)
+				failIf(err)
+
+				process, err := container.Run(garden.ProcessSpec{
+					Path: "/bin/sh",
+					Args: []string{"-l"},
+					Env:  []string{"TERM=" + os.Getenv("TERM")},
+					TTY: &garden.TTYSpec{
+						WindowSize: &garden.WindowSize{
+							Rows:    rows,
+							Columns: cols,
+						},
+					},
+					Privileged: true,
+				}, garden.ProcessIO{
+					Stdin:  term,
+					Stdout: term,
+					Stderr: term,
+				})
+				if err != nil {
+					term.Restore()
+					failIf(err)
+				}
+
+				resized := make(chan os.Signal, 10)
+				signal.Notify(resized, syscall.SIGWINCH)
+
+				go func() {
+					for {
+						<-resized
+
+						rows, cols, err := pty.Getsize(os.Stdin)
+						if err == nil {
+							process.SetTTY(garden.TTYSpec{
+								WindowSize: &garden.WindowSize{
+									Rows:    rows,
+									Columns: cols,
+								},
+							})
+						}
+					}
+				}()
+
+				process.Wait()
+				term.Restore()
 			},
 		},
 		{

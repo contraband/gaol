@@ -1,0 +1,44 @@
+{
+	"ImportPath": "github.com/xoebus/gaol",
+	"GoVersion": "go1.4.1",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/bmizerany/pat",
+			"Rev": "b8a35001b773c267eb260a691f4e5499a3531600"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry-incubator/garden",
+			"Comment": "go-wshd-667-g4b74b17",
+			"Rev": "4b74b170b9c8b616bc369f702d975f6589e7e591"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-62-gbf4a526",
+			"Rev": "bf4a526f48af7badd25d2cb02d587e1b01be3b50"
+		},
+		{
+			"ImportPath": "github.com/gogo/protobuf/proto",
+			"Rev": "ab6cea4a44ef42b748cd88d2d372047b75806e0c"
+		},
+		{
+			"ImportPath": "github.com/kr/pty",
+			"Comment": "release.r56-25-g05017fc",
+			"Rev": "05017fcccf23c823bfdea560dcc958a136e54fb7"
+		},
+		{
+			"ImportPath": "github.com/pivotal-golang/archiver/compressor",
+			"Rev": "cdabc654f61ff99a82622c888f738c808c38cfa9"
+		},
+		{
+			"ImportPath": "github.com/pkg/term",
+			"Rev": "e43fe36b3c6c38b682d86badb217aa95d7e86f4b"
+		},
+		{
+			"ImportPath": "github.com/tedsuo/rata",
+			"Rev": "6197c97c67a03bfd4d6977a3b6060d6c6b3d581f"
+		}
+	]
+}

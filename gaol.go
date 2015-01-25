@@ -150,6 +150,68 @@ func main() {
 			},
 		},
 		{
+			Name:  "run",
+			Usage: "run a command in a container",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "attach, a",
+					Usage: "attach to the process after it is started",
+				},
+				cli.StringFlag{
+					Name:  "dir, d",
+					Usage: "current working directory of process",
+				},
+				cli.StringFlag{
+					Name:  "user, u",
+					Usage: "user to run the process as",
+				},
+				cli.BoolFlag{
+					Name:  "privileged, p",
+					Usage: "use privileged user in container",
+				},
+			},
+			BashComplete: handleComplete,
+			Action: func(c *cli.Context) {
+				attach := c.Bool("attach")
+				dir := c.String("dir")
+				user := c.String("user")
+				privileged := c.Bool("privileged")
+
+				handle := handle(c)
+				container, err := client(c).Lookup(handle)
+				failIf(err)
+
+				var processIo garden.ProcessIO
+				if attach {
+					processIo = garden.ProcessIO{
+						Stdin:  os.Stdin,
+						Stdout: os.Stdout,
+						Stderr: os.Stderr,
+					}
+				} else {
+					processIo = garden.ProcessIO{}
+				}
+
+				path := c.Args()[1]
+				args := c.Args()[2:]
+
+				process, err := container.Run(garden.ProcessSpec{
+					Path:       path,
+					Args:       args,
+					Dir:        dir,
+					Privileged: privileged,
+					User:       user,
+				}, processIo)
+				failIf(err)
+
+				if attach {
+					process.Wait()
+				} else {
+					fmt.Println(process.ID())
+				}
+			},
+		},
+		{
 			Name:         "shell",
 			Usage:        "open a shell inside the running container",
 			BashComplete: handleComplete,

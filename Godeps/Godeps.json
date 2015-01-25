@@ -29,6 +29,10 @@
 			"Rev": "05017fcccf23c823bfdea560dcc958a136e54fb7"
 		},
 		{
+			"ImportPath": "github.com/mattn/go-shellwords",
+			"Rev": "35d512af75e283aae4ca1fc3d44b159ed66189a4"
+		},
+		{
 			"ImportPath": "github.com/pivotal-golang/archiver/compressor",
 			"Rev": "cdabc654f61ff99a82622c888f738c808c38cfa9"
 		},

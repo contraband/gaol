@@ -13,6 +13,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/kr/pty"
+	"github.com/mattn/go-shellwords"
 	"github.com/pivotal-golang/archiver/compressor"
 	"github.com/pkg/term"
 
@@ -192,12 +193,13 @@ func main() {
 					processIo = garden.ProcessIO{}
 				}
 
-				path := c.Args()[1]
-				args := c.Args()[2:]
+				command := c.Args()[1]
+				args, err := shellwords.Parse(command)
+				failIf(err)
 
 				process, err := container.Run(garden.ProcessSpec{
-					Path:       path,
-					Args:       args,
+					Path:       args[0],
+					Args:       args[1:],
 					Dir:        dir,
 					Privileged: privileged,
 					User:       user,

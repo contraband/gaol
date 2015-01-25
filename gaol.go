@@ -207,10 +207,39 @@ func main() {
 				failIf(err)
 
 				if attach {
-					process.Wait()
+					_, err = process.Wait()
+					failIf(err)
 				} else {
 					fmt.Println(process.ID())
 				}
+			},
+		},
+		{
+			Name:  "attach",
+			Usage: "attach to command running in the container",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "pid, p",
+					Usage: "process id to connect to",
+				},
+			},
+			BashComplete: handleComplete,
+			Action: func(c *cli.Context) {
+				pid := uint32(c.Int("pid"))
+
+				handle := handle(c)
+				container, err := client(c).Lookup(handle)
+				failIf(err)
+
+				process, err := container.Attach(pid, garden.ProcessIO{
+					Stdin:  os.Stdin,
+					Stdout: os.Stdout,
+					Stderr: os.Stderr,
+				})
+				failIf(err)
+
+				_, err = process.Wait()
+				failIf(err)
 			},
 		},
 		{

@@ -21,6 +21,20 @@ import (
 	gconn "github.com/cloudfoundry-incubator/garden/client/connection"
 )
 
+func handleComplete(c *cli.Context) {
+	// This will complete if no args are passed
+	if len(c.Args()) > 0 {
+		return
+	}
+
+	containers, err := client(c).Containers(nil)
+	failIf(err)
+
+	for _, container := range containers {
+		fmt.Println(container.Handle())
+	}
+}
+
 func fail(err error) {
 	fmt.Fprintln(os.Stderr, "failed:", err)
 	os.Exit(1)
@@ -51,6 +65,7 @@ func main() {
 	app.Version = "0.0.1"
 	app.Author = "Chris Brown"
 	app.Email = "cbrown@pivotal.io"
+	app.EnableBashCompletion = true
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -91,8 +106,9 @@ func main() {
 			},
 		},
 		{
-			Name:  "destroy",
-			Usage: "destroy a container",
+			Name:         "destroy",
+			Usage:        "destroy a container",
+			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
 				client := client(c)
 				handles := c.Args()
@@ -116,8 +132,9 @@ func main() {
 			},
 		},
 		{
-			Name:  "shell",
-			Usage: "open a shell inside the running container",
+			Name:         "shell",
+			Usage:        "open a shell inside the running container",
+			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
 				container, err := client(c).Lookup(handle(c))
 				failIf(err)
@@ -184,6 +201,7 @@ func main() {
 					Usage: "destination path in the container",
 				},
 			},
+			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
 				handle := handle(c)
 				dst := c.String("to-file")
@@ -225,6 +243,7 @@ func main() {
 					Usage: "source path in the container",
 				},
 			},
+			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
 				handle := handle(c)
 				src := c.String("from-file")

@@ -24,7 +24,7 @@ import (
 
 func handleComplete(c *cli.Context) {
 	// This will complete if no args are passed
-	if len(c.Args()) > 0 {
+	if c.Args().Present() {
 		return
 	}
 

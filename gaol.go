@@ -90,15 +90,33 @@ func main() {
 			Usage: "create a container",
 			Flags: []cli.Flag{
 				cli.StringFlag{
+					Name:  "handle, n",
+					Usage: "name to give container",
+				},
+				cli.StringFlag{
 					Name:  "rootfs, r",
 					Usage: "rootfs image with which to create the container",
 				},
+				cli.DurationFlag{
+					Name:  "grace, g",
+					Usage: "grace time (resetting ttl) of container",
+				},
+				cli.BoolFlag{
+					Name:  "privileged, p",
+					Usage: "privileged user in container is privileged in host",
+				},
 			},
 			Action: func(c *cli.Context) {
+				handle := c.String("handle")
+				grace := c.Duration("grace")
 				rootfs := c.String("rootfs")
+				privileged := c.Bool("privileged")
 
 				container, err := client(c).Create(garden.ContainerSpec{
+					Handle:     handle,
+					GraceTime:  grace,
 					RootFSPath: rootfs,
+					Privileged: privileged,
 				})
 				failIf(err)
 
@@ -204,7 +222,11 @@ func main() {
 			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
 				handle := handle(c)
+
 				dst := c.String("to-file")
+				if dst == "" {
+					fail(errors.New("missing --to-file argument"))
+				}
 
 				container, err := client(c).Lookup(handle)
 				failIf(err)
@@ -246,7 +268,11 @@ func main() {
 			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
 				handle := handle(c)
+
 				src := c.String("from-file")
+				if src == "" {
+					fail(errors.New("missing --from-file argument"))
+				}
 
 				container, err := client(c).Lookup(handle)
 				failIf(err)

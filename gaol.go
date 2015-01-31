@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -379,6 +380,37 @@ func main() {
 
 				_, err = io.Copy(os.Stdout, tr)
 				failIf(err)
+			},
+		},
+		{
+			Name:  "net-in",
+			Usage: "map a port on the host to a port in the container",
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "port, p",
+					Usage: "container port",
+				},
+			},
+			BashComplete: handleComplete,
+			Action: func(c *cli.Context) {
+				target := c.GlobalString("target")
+				requestedContainerPort := uint32(c.Int("port"))
+
+				if target == "" {
+					fail(errors.New("target must be set"))
+				}
+
+				handle := handle(c)
+				container, err := client(c).Lookup(handle)
+				failIf(err)
+
+				hostPort, _, err := container.NetIn(0, requestedContainerPort)
+				failIf(err)
+
+				host, _, err := net.SplitHostPort(target)
+				failIf(err)
+
+				fmt.Println(net.JoinHostPort(host, fmt.Sprintf("%d", hostPort)))
 			},
 		},
 	}

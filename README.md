@@ -1,3 +1,0 @@
-# gaol
-
-*garden cli*

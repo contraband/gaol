@@ -1,0 +1,59 @@
+                                                _ 
+                               __ _  __ _  ___ | |
+                              / _` |/ _` |/ _ \| |
+                             | (_| | (_| | (_) | |
+                              \__, |\__,_|\___/|_|
+                              |___/               
+
+                      a cli for garden (pronounced 'jail')
+
+= about
+
+Gaol is a simple, fast, and composable CLI for the Garden container server. It
+is designed to be used with other command line tools.
+
+= installation
+
+    go get github.com/xoebus/gaol
+
+= usage
+
+All of the commands are documented in the help and usage section of the CLI.
+You can see this by running:
+
+    gaol help
+
+Some of the more common commands are:
+
+    # creating a container
+    $ gaol create
+    conabc123
+
+    # run a command inside a container
+    $ gaol run conabc123 -a date
+    Sat  7 Feb 2015 15:14:17 GMT
+
+    # run a process in the background and then attach to it
+    $ gaol run conabc123 bash -c "while true; do date; sleep 1; done"
+    5
+    $ gaol attach conabc123 5
+    Sat  7 Feb 2015 15:14:45 GMT
+    Sat  7 Feb 2015 15:14:46 GMT
+    Sat  7 Feb 2015 15:14:47 GMT
+
+    # open a shell inside a new container
+    $ gaol shell $(gaol create)
+
+    # copying a file into a container
+    $ cat file.txt | gaol stream-in conabc123 -t /etc/file.txt
+
+    # destroy all containers
+    $ gaol list | xargs gaol destroy
+
+= links
+
+Garden
+https://github.com/cloudfoundry-incubator/garden
+
+Gaol Definition
+http://en.wiktionary.org/wiki/gaol

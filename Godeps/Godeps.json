@@ -11,17 +11,13 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/garden",
-			"Comment": "go-wshd-667-g4b74b17",
-			"Rev": "4b74b170b9c8b616bc369f702d975f6589e7e591"
+			"Comment": "go-wshd-692-g535b5aa",
+			"Rev": "535b5aaeca2a19eded827c5a4031145cae96b7ca"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-62-gbf4a526",
-			"Rev": "bf4a526f48af7badd25d2cb02d587e1b01be3b50"
-		},
-		{
-			"ImportPath": "github.com/gogo/protobuf/proto",
-			"Rev": "ab6cea4a44ef42b748cd88d2d372047b75806e0c"
+			"Comment": "1.2.0-66-g6086d79",
+			"Rev": "6086d7927ec35315964d9fea46df6c04e6d697c1"
 		},
 		{
 			"ImportPath": "github.com/kr/pty",
@@ -42,7 +38,7 @@
 		},
 		{
 			"ImportPath": "github.com/tedsuo/rata",
-			"Rev": "6197c97c67a03bfd4d6977a3b6060d6c6b3d581f"
+			"Rev": "b15ebd8bd97ae9202eb00c076d59b2f2824bce37"
 		}
 	]
 }

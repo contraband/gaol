@@ -1,9 +1,10 @@
 package rata_test
 
 import (
-	"github.com/onsi/gomega/ghttp"
 	"net/http"
 	"net/http/httptest"
+
+	"github.com/onsi/gomega/ghttp"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -231,19 +232,40 @@ var _ = Describe("Router", func() {
 
 	Describe("parsing params", func() {
 		// this is basically done for us by PAT we simply want to verify some assumptions in these tests
-		Context("when a query param is provided that conflicts with a named path param", func() {
-			var r http.Handler
-			var err error
-			var routes = rata.Routes{
-				{Path: "/something/:neato", Method: "GET", Name: "getter"},
+		Context("when all the handlers are present", func() {
+			var resp *httptest.ResponseRecorder
+			var handlers = rata.Handlers{
+				"getter": http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					w.Write([]byte(rata.Param(req, "neato")))
+				}),
 			}
 
-			Context("when all the handlers are present", func() {
-				var resp *httptest.ResponseRecorder
-				var handlers = rata.Handlers{
-					"getter": http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-						w.Write([]byte(req.URL.Query().Get(":neato")))
-					}),
+			Context("when a named path param is provided", func() {
+				var r http.Handler
+				var err error
+				var routes = rata.Routes{
+					{Path: "/something/:neato", Method: "GET", Name: "getter"},
+				}
+
+				BeforeEach(func() {
+					resp = httptest.NewRecorder()
+					r, err = rata.NewRouter(routes, handlers)
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+
+				It("the path param is returned", func() {
+					req, _ := http.NewRequest("GET", "/something/the-param-value", nil)
+
+					r.ServeHTTP(resp, req)
+					Ω(resp.Body.String()).Should(Equal("the-param-value"))
+				})
+			})
+
+			Context("when a query param is provided that conflicts with a named path param", func() {
+				var r http.Handler
+				var err error
+				var routes = rata.Routes{
+					{Path: "/something/:neato", Method: "GET", Name: "getter"},
 				}
 
 				BeforeEach(func() {

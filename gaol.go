@@ -167,6 +167,10 @@ func main() {
 					Name:  "user, u",
 					Usage: "user to run the process as",
 				},
+				cli.StringFlag{
+					Name:  "command, c",
+					Usage: "the command to run",
+				},
 				cli.BoolFlag{
 					Name:  "privileged, p",
 					Usage: "use privileged user in container",
@@ -178,6 +182,7 @@ func main() {
 				dir := c.String("dir")
 				user := c.String("user")
 				privileged := c.Bool("privileged")
+				command := c.String("command")
 
 				handle := handle(c)
 				container, err := client(c).Lookup(handle)
@@ -194,7 +199,6 @@ func main() {
 					processIo = garden.ProcessIO{}
 				}
 
-				command := c.Args()[1]
 				args, err := shellwords.Parse(command)
 				failIf(err)
 
@@ -227,6 +231,10 @@ func main() {
 			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
 				pid := uint32(c.Int("pid"))
+				if pid == 0 {
+					err := errors.New("must specify pid to attach to")
+					failIf(err)
+				}
 
 				handle := handle(c)
 				container, err := client(c).Lookup(handle)

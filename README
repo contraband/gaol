@@ -13,9 +13,11 @@ Gaol is a simple, fast, and composable CLI for the Garden container server. It
 is designed to be used with other command line tools. It is suitable for use in
 scripts and other headless operations.
 
+
 = installation
 
     go get github.com/xoebus/gaol
+
 
 = usage
 
@@ -50,6 +52,7 @@ Some of the more common commands are:
 
     # destroy all containers
     $ gaol list | xargs gaol destroy
+
 
 = links
 

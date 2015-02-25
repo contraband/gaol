@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/kr/pty"
@@ -102,6 +103,7 @@ func main() {
 				cli.DurationFlag{
 					Name:  "grace, g",
 					Usage: "grace time (resetting ttl) of container",
+					Value: 5 * time.Minute,
 				},
 				cli.BoolFlag{
 					Name:  "privileged, p",

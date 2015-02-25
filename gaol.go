@@ -100,6 +100,11 @@ func main() {
 					Name:  "rootfs, r",
 					Usage: "rootfs image with which to create the container",
 				},
+				cli.StringSliceFlag{
+					Name:  "env, e",
+					Usage: "set environment variables",
+					Value: &cli.StringSlice{},
+				},
 				cli.DurationFlag{
 					Name:  "grace, g",
 					Usage: "grace time (resetting ttl) of container",
@@ -114,6 +119,7 @@ func main() {
 				handle := c.String("handle")
 				grace := c.Duration("grace")
 				rootfs := c.String("rootfs")
+				env := c.StringSlice("env")
 				privileged := c.Bool("privileged")
 
 				container, err := client(c).Create(garden.ContainerSpec{
@@ -121,6 +127,7 @@ func main() {
 					GraceTime:  grace,
 					RootFSPath: rootfs,
 					Privileged: privileged,
+					Env:        env,
 				})
 				failIf(err)
 
@@ -173,6 +180,11 @@ func main() {
 					Name:  "command, c",
 					Usage: "the command to run",
 				},
+				cli.StringSliceFlag{
+					Name:  "env, e",
+					Usage: "set environment variables",
+					Value: &cli.StringSlice{},
+				},
 				cli.BoolFlag{
 					Name:  "privileged, p",
 					Usage: "use privileged user in container",
@@ -185,6 +197,7 @@ func main() {
 				user := c.String("user")
 				privileged := c.Bool("privileged")
 				command := c.String("command")
+				env := c.StringSlice("env")
 
 				handle := handle(c)
 				container, err := client(c).Lookup(handle)
@@ -210,6 +223,7 @@ func main() {
 					Dir:        dir,
 					Privileged: privileged,
 					User:       user,
+					Env:        env,
 				}, processIo)
 				failIf(err)
 

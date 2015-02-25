@@ -228,8 +228,9 @@ func main() {
 				failIf(err)
 
 				if attach {
-					_, err = process.Wait()
+					status, err := process.Wait()
 					failIf(err)
+					os.Exit(status)
 				} else {
 					fmt.Println(process.ID())
 				}

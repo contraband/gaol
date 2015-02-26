@@ -37,7 +37,7 @@ Some of the more common commands are:
     Sat  7 Feb 2015 15:14:17 GMT
 
     # run a process in the background and then attach to it
-    $ gaol run conabc123 --command 'bash -c "while true; do date; sleep 1; done"'
+    $ gaol run conabc123 --command 'sh -c "while true; do date; sleep 1; done"'
     5
     $ gaol attach conabc123 --pid 5
     Sat  7 Feb 2015 15:14:45 GMT

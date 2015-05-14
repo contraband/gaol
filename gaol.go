@@ -185,17 +185,12 @@ func main() {
 					Usage: "set environment variables",
 					Value: &cli.StringSlice{},
 				},
-				cli.BoolFlag{
-					Name:  "privileged, p",
-					Usage: "use privileged user in container",
-				},
 			},
 			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
 				attach := c.Bool("attach")
 				dir := c.String("dir")
 				user := c.String("user")
-				privileged := c.Bool("privileged")
 				command := c.String("command")
 				env := c.StringSlice("env")
 
@@ -218,12 +213,11 @@ func main() {
 				failIf(err)
 
 				process, err := container.Run(garden.ProcessSpec{
-					Path:       args[0],
-					Args:       args[1:],
-					Dir:        dir,
-					Privileged: privileged,
-					User:       user,
-					Env:        env,
+					Path: args[0],
+					Args: args[1:],
+					Dir:  dir,
+					User: user,
+					Env:  env,
 				}, processIo)
 				failIf(err)
 
@@ -295,7 +289,6 @@ func main() {
 							Columns: cols,
 						},
 					},
-					Privileged: true,
 				}, garden.ProcessIO{
 					Stdin:  term,
 					Stdout: term,

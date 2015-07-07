@@ -364,7 +364,11 @@ func main() {
 					w.Close()
 				}(writer)
 
-				err = container.StreamIn(filepath.Dir(dst), reader)
+				streamInSpec := garden.StreamInSpec{
+					Path:      filepath.Dir(dst),
+					TarStream: reader,
+				}
+				err = container.StreamIn(streamInSpec)
 				failIf(err)
 			},
 		},
@@ -389,7 +393,8 @@ func main() {
 				container, err := client(c).Lookup(handle)
 				failIf(err)
 
-				output, err := container.StreamOut(src)
+				streamOutSpec := garden.StreamOutSpec{Path: src}
+				output, err := container.StreamOut(streamOutSpec)
 				failIf(err)
 
 				tr := tar.NewReader(output)

@@ -263,8 +263,14 @@ func main() {
 			},
 		},
 		{
-			Name:         "shell",
-			Usage:        "open a shell inside the running container",
+			Name:  "shell",
+			Usage: "open a shell inside the running container",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "user, u",
+					Usage: "user to open shell as",
+				},
+			},
 			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
 				container, err := client(c).Lookup(handle(c))
@@ -280,6 +286,7 @@ func main() {
 				failIf(err)
 
 				process, err := container.Run(garden.ProcessSpec{
+					User: c.String("user"),
 					Path: "/bin/sh",
 					Args: []string{"-l"},
 					Env:  []string{"TERM=" + os.Getenv("TERM")},

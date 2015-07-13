@@ -174,15 +174,19 @@ func main() {
 			Name:  "list",
 			Usage: "get a list of running containers",
 			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "separator",
-					Usage: "separator to print between containers",
-					Value: "\n",
-				},
 				cli.StringSliceFlag{
 					Name:  "properties, p",
 					Usage: "filter by properties (name=val)",
 					Value: &cli.StringSlice{},
+				},
+				cli.BoolFlag{
+					Name:  "verbose, v",
+					Usage: "print additional details about each container",
+				},
+				cli.StringFlag{
+					Name:  "separator",
+					Usage: "separator to print between containers in verbose mode",
+					Value: "\n",
 				},
 			},
 			Action: func(c *cli.Context) {
@@ -201,15 +205,19 @@ func main() {
 				containers, err := client(c).Containers(nil)
 				failIf(err)
 
+				verbose := c.Bool("verbose")
+
 				for _, container := range containers {
 					fmt.Println(container.Handle())
 
-					props, _ := container.Properties()
-					for k, v := range props {
-						fmt.Printf("  %s=%s\n", k, v)
-					}
+					if verbose {
+						props, _ := container.Properties()
+						for k, v := range props {
+							fmt.Printf("  %s=%s\n", k, v)
+						}
 
-					fmt.Print(separator)
+						fmt.Print(separator)
+					}
 				}
 			},
 		},

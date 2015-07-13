@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -151,12 +152,34 @@ func main() {
 		{
 			Name:  "list",
 			Usage: "get a list of running containers",
+			Flags: []cli.Flag{
+				cli.StringSliceFlag{
+					Name:  "properties, p",
+					Usage: "filter by properties (name=val)",
+					Value: &cli.StringSlice{},
+				},
+			},
 			Action: func(c *cli.Context) {
+				properties := garden.Properties{}
+				for _, prop := range c.StringSlice("properties") {
+					segs := strings.SplitN(prop, "=", 2)
+					if len(segs) < 2 {
+						fail(errors.New("malformed property pair (must be name=value)"))
+					}
+
+					properties[segs[0]] = segs[1]
+				}
+
 				containers, err := client(c).Containers(nil)
 				failIf(err)
 
 				for _, container := range containers {
 					fmt.Println(container.Handle())
+
+					props, _ := container.Properties()
+					for k, v := range props {
+						fmt.Printf("  %s=%s\n", k, v)
+					}
 				}
 			},
 		},

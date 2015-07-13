@@ -199,7 +199,7 @@ func main() {
 					properties[segs[0]] = segs[1]
 				}
 
-				containers, err := client(c).Containers(nil)
+				containers, err := client(c).Containers(properties)
 				failIf(err)
 
 				verbose := c.Bool("verbose")

@@ -115,6 +115,11 @@ func main() {
 					Name:  "privileged, p",
 					Usage: "privileged user in container is privileged in host",
 				},
+				cli.StringSliceFlag{
+					Name:  "bind-mount, m",
+					Usage: "bind-mount host-path:container-path",
+					Value: &cli.StringSlice{},
+				},
 			},
 			Action: func(c *cli.Context) {
 				handle := c.String("handle")
@@ -122,6 +127,23 @@ func main() {
 				rootfs := c.String("rootfs")
 				env := c.StringSlice("env")
 				privileged := c.Bool("privileged")
+				mounts := c.StringSlice("bind-mount")
+
+				var bindMounts []garden.BindMount
+				for _, pair := range mounts {
+					segs := strings.SplitN(pair, ":", 2)
+					if len(segs) != 2 {
+						fmt.Fprintf(os.Stderr, "invalid bind-mount segment (must be host-path:container-path): %s", pair)
+						os.Exit(1)
+					}
+
+					bindMounts = append(bindMounts, garden.BindMount{
+						SrcPath: segs[0],
+						DstPath: segs[1],
+						Mode:    garden.BindMountModeRW,
+						Origin:  garden.BindMountOriginHost,
+					})
+				}
 
 				container, err := client(c).Create(garden.ContainerSpec{
 					Handle:     handle,
@@ -129,6 +151,7 @@ func main() {
 					RootFSPath: rootfs,
 					Privileged: privileged,
 					Env:        env,
+					BindMounts: bindMounts,
 				})
 				failIf(err)
 

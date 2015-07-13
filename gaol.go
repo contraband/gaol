@@ -1,22 +1,19 @@
 package main
 
 import (
-	"archive/tar"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/kr/pty"
 	"github.com/mattn/go-shellwords"
-	"github.com/pivotal-golang/archiver/compressor"
 	"github.com/pkg/term"
 
 	"github.com/cloudfoundry-incubator/garden"
@@ -114,6 +111,11 @@ func main() {
 					Name:  "privileged, p",
 					Usage: "privileged user in container is privileged in host",
 				},
+				cli.StringSliceFlag{
+					Name:  "bind-mount, m",
+					Usage: "bind-mount host-path:container-path",
+					Value: &cli.StringSlice{},
+				},
 			},
 			Action: func(c *cli.Context) {
 				handle := c.String("handle")
@@ -121,6 +123,22 @@ func main() {
 				rootfs := c.String("rootfs")
 				env := c.StringSlice("env")
 				privileged := c.Bool("privileged")
+				mounts := c.StringSlice("bind-mount")
+
+				var bindMounts []garden.BindMount
+				for _, pair := range mounts {
+					segs := strings.SplitN(pair, ":", 2)
+					if len(segs) != 2 {
+						fail(fmt.Errorf("invalid bind-mount segment (must be host-path:container-path): %s", pair))
+					}
+
+					bindMounts = append(bindMounts, garden.BindMount{
+						SrcPath: segs[0],
+						DstPath: segs[1],
+						Mode:    garden.BindMountModeRW,
+						Origin:  garden.BindMountOriginHost,
+					})
+				}
 
 				container, err := client(c).Create(garden.ContainerSpec{
 					Handle:     handle,
@@ -128,6 +146,7 @@ func main() {
 					RootFSPath: rootfs,
 					Privileged: privileged,
 					Env:        env,
+					BindMounts: bindMounts,
 				})
 				failIf(err)
 
@@ -151,12 +170,51 @@ func main() {
 		{
 			Name:  "list",
 			Usage: "get a list of running containers",
+			Flags: []cli.Flag{
+				cli.StringSliceFlag{
+					Name:  "properties, p",
+					Usage: "filter by properties (name=val)",
+					Value: &cli.StringSlice{},
+				},
+				cli.BoolFlag{
+					Name:  "verbose, v",
+					Usage: "print additional details about each container",
+				},
+				cli.StringFlag{
+					Name:  "separator",
+					Usage: "separator to print between containers in verbose mode",
+					Value: "\n",
+				},
+			},
 			Action: func(c *cli.Context) {
-				containers, err := client(c).Containers(nil)
+				separator := c.String("separator")
+
+				properties := garden.Properties{}
+				for _, prop := range c.StringSlice("properties") {
+					segs := strings.SplitN(prop, "=", 2)
+					if len(segs) < 2 {
+						fail(errors.New("malformed property pair (must be name=value)"))
+					}
+
+					properties[segs[0]] = segs[1]
+				}
+
+				containers, err := client(c).Containers(properties)
 				failIf(err)
+
+				verbose := c.Bool("verbose")
 
 				for _, container := range containers {
 					fmt.Println(container.Handle())
+
+					if verbose {
+						props, _ := container.Properties()
+						for k, v := range props {
+							fmt.Printf("  %s=%s\n", k, v)
+						}
+
+						fmt.Print(separator)
+					}
 				}
 			},
 		},
@@ -334,7 +392,7 @@ func main() {
 			Usage: "stream data into the container",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "to-file, t",
+					Name:  "destination, d",
 					Usage: "destination path in the container",
 				},
 			},
@@ -342,39 +400,19 @@ func main() {
 			Action: func(c *cli.Context) {
 				handle := handle(c)
 
-				dst := c.String("to-file")
+				dst := c.String("destination")
 				if dst == "" {
-					fail(errors.New("missing --to-file argument"))
+					fail(errors.New("missing --destination flag"))
 				}
 
 				container, err := client(c).Lookup(handle)
 				failIf(err)
 
-				// perform dance to get correct file names
-				tmpDir, err := ioutil.TempDir("", "gaol")
-				failIf(err)
-				defer os.RemoveAll(tmpDir)
-
-				tmp, err := os.Create(filepath.Join(tmpDir, filepath.Base(dst)))
-				failIf(err)
-
-				_, err = io.Copy(tmp, os.Stdin)
-				failIf(err)
-
-				err = tmp.Close()
-				failIf(err)
-
-				reader, writer := io.Pipe()
-				go func(w io.WriteCloser) {
-					err := compressor.WriteTar(tmp.Name(), w)
-					failIf(err)
-					w.Close()
-				}(writer)
-
 				streamInSpec := garden.StreamInSpec{
-					Path:      filepath.Dir(dst),
-					TarStream: reader,
+					Path:      dst,
+					TarStream: os.Stdin,
 				}
+
 				err = container.StreamIn(streamInSpec)
 				failIf(err)
 			},
@@ -384,7 +422,7 @@ func main() {
 			Usage: "stream data out of the container",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "from-file, f",
+					Name:  "source, s",
 					Usage: "source path in the container",
 				},
 			},
@@ -392,9 +430,9 @@ func main() {
 			Action: func(c *cli.Context) {
 				handle := handle(c)
 
-				src := c.String("from-file")
+				src := c.String("source")
 				if src == "" {
-					fail(errors.New("missing --from-file argument"))
+					fail(errors.New("missing --source flag"))
 				}
 
 				container, err := client(c).Lookup(handle)
@@ -404,12 +442,7 @@ func main() {
 				output, err := container.StreamOut(streamOutSpec)
 				failIf(err)
 
-				tr := tar.NewReader(output)
-				_, err = tr.Next()
-				failIf(err)
-
-				_, err = io.Copy(os.Stdout, tr)
-				failIf(err)
+				io.Copy(os.Stdout, output)
 			},
 		},
 		{

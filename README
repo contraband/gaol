@@ -47,8 +47,11 @@ Some of the more common commands are:
     # open a shell inside a new container
     $ gaol shell $(gaol create)
 
-    # copying a file into a container
-    $ cat file.txt | gaol stream-in conabc123 --to-file /etc/file.txt
+    # copying files into a container
+    $ tar cf file.txt | gaol stream-in conabc123 --destination /etc/file.txt
+
+    # copying files from one container to another
+    $ gaol stream-out abc -s ./foo | gaol stream-in def -d ./foo
 
     # destroy all containers
     $ gaol list | xargs gaol destroy

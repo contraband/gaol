@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/tar"
 	"errors"
 	"fmt"
 	"io"
@@ -133,8 +132,7 @@ func main() {
 				for _, pair := range mounts {
 					segs := strings.SplitN(pair, ":", 2)
 					if len(segs) != 2 {
-						fmt.Fprintf(os.Stderr, "invalid bind-mount segment (must be host-path:container-path): %s", pair)
-						os.Exit(1)
+						fail(fmt.Errorf("invalid bind-mount segment (must be host-path:container-path): %s", pair))
 					}
 
 					bindMounts = append(bindMounts, garden.BindMount{
@@ -450,12 +448,7 @@ func main() {
 				output, err := container.StreamOut(streamOutSpec)
 				failIf(err)
 
-				tr := tar.NewReader(output)
-				_, err = tr.Next()
-				failIf(err)
-
-				_, err = io.Copy(os.Stdout, tr)
-				failIf(err)
+				io.Copy(os.Stdout, output)
 			},
 		},
 		{

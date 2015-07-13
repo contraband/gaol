@@ -4,11 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -16,7 +14,6 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/kr/pty"
 	"github.com/mattn/go-shellwords"
-	"github.com/pivotal-golang/archiver/compressor"
 	"github.com/pkg/term"
 
 	"github.com/cloudfoundry-incubator/garden"
@@ -395,7 +392,7 @@ func main() {
 			Usage: "stream data into the container",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "to-file, t",
+					Name:  "destination, d",
 					Usage: "destination path in the container",
 				},
 			},
@@ -403,39 +400,19 @@ func main() {
 			Action: func(c *cli.Context) {
 				handle := handle(c)
 
-				dst := c.String("to-file")
+				dst := c.String("destination")
 				if dst == "" {
-					fail(errors.New("missing --to-file argument"))
+					fail(errors.New("missing --destination flag"))
 				}
 
 				container, err := client(c).Lookup(handle)
 				failIf(err)
 
-				// perform dance to get correct file names
-				tmpDir, err := ioutil.TempDir("", "gaol")
-				failIf(err)
-				defer os.RemoveAll(tmpDir)
-
-				tmp, err := os.Create(filepath.Join(tmpDir, filepath.Base(dst)))
-				failIf(err)
-
-				_, err = io.Copy(tmp, os.Stdin)
-				failIf(err)
-
-				err = tmp.Close()
-				failIf(err)
-
-				reader, writer := io.Pipe()
-				go func(w io.WriteCloser) {
-					err := compressor.WriteTar(tmp.Name(), w)
-					failIf(err)
-					w.Close()
-				}(writer)
-
 				streamInSpec := garden.StreamInSpec{
-					Path:      filepath.Dir(dst),
-					TarStream: reader,
+					Path:      dst,
+					TarStream: os.Stdin,
 				}
+
 				err = container.StreamIn(streamInSpec)
 				failIf(err)
 			},
@@ -445,7 +422,7 @@ func main() {
 			Usage: "stream data out of the container",
 			Flags: []cli.Flag{
 				cli.StringFlag{
-					Name:  "from-file, f",
+					Name:  "source, s",
 					Usage: "source path in the container",
 				},
 			},
@@ -453,9 +430,9 @@ func main() {
 			Action: func(c *cli.Context) {
 				handle := handle(c)
 
-				src := c.String("from-file")
+				src := c.String("source")
 				if src == "" {
-					fail(errors.New("missing --from-file argument"))
+					fail(errors.New("missing --source flag"))
 				}
 
 				container, err := client(c).Lookup(handle)

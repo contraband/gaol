@@ -174,6 +174,11 @@ func main() {
 			Name:  "list",
 			Usage: "get a list of running containers",
 			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "separator",
+					Usage: "separator to print between containers",
+					Value: "\n",
+				},
 				cli.StringSliceFlag{
 					Name:  "properties, p",
 					Usage: "filter by properties (name=val)",
@@ -181,6 +186,8 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) {
+				separator := c.String("separator")
+
 				properties := garden.Properties{}
 				for _, prop := range c.StringSlice("properties") {
 					segs := strings.SplitN(prop, "=", 2)
@@ -201,6 +208,8 @@ func main() {
 					for k, v := range props {
 						fmt.Printf("  %s=%s\n", k, v)
 					}
+
+					fmt.Print(separator)
 				}
 			},
 		},

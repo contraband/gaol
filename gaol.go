@@ -292,15 +292,15 @@ func main() {
 			Name:  "attach",
 			Usage: "attach to command running in the container",
 			Flags: []cli.Flag{
-				cli.IntFlag{
+				cli.StringFlag{
 					Name:  "pid, p",
 					Usage: "process id to connect to",
 				},
 			},
 			BashComplete: handleComplete,
 			Action: func(c *cli.Context) {
-				pid := uint32(c.Int("pid"))
-				if pid == 0 {
+				pid := c.String("pid")
+				if pid == "" {
 					err := errors.New("must specify pid to attach to")
 					failIf(err)
 				}

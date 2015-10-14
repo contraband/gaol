@@ -111,6 +111,10 @@ func main() {
 					Name:  "privileged, p",
 					Usage: "privileged user in container is privileged in host",
 				},
+				cli.StringFlag{
+					Name:  "network",
+					Usage: "the subnet of the container",
+				},
 				cli.StringSliceFlag{
 					Name:  "bind-mount, m",
 					Usage: "bind-mount host-path:container-path",
@@ -123,6 +127,7 @@ func main() {
 				rootfs := c.String("rootfs")
 				env := c.StringSlice("env")
 				privileged := c.Bool("privileged")
+				network := c.String("network")
 				mounts := c.StringSlice("bind-mount")
 
 				var bindMounts []garden.BindMount
@@ -146,6 +151,7 @@ func main() {
 					RootFSPath: rootfs,
 					Privileged: privileged,
 					Env:        env,
+					Network:    network,
 					BindMounts: bindMounts,
 				})
 				failIf(err)

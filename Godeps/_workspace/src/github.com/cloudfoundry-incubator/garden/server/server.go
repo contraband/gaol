@@ -11,7 +11,7 @@ import (
 	"github.com/cloudfoundry-incubator/garden"
 	"github.com/cloudfoundry-incubator/garden/routes"
 	"github.com/cloudfoundry-incubator/garden/server/bomberman"
-	"github.com/gogo/protobuf/proto"
+	"github.com/cloudfoundry-incubator/garden/server/streamer"
 	"github.com/pivotal-golang/lager"
 	"github.com/tedsuo/rata"
 )
@@ -37,16 +37,10 @@ type GardenServer struct {
 	conns map[net.Conn]net.Conn
 	mu    sync.Mutex
 
+	streamer *streamer.Streamer
+
 	destroys  map[string]struct{}
 	destroysL *sync.Mutex
-}
-
-type UnhandledRequestError struct {
-	Request proto.Message
-}
-
-func (e UnhandledRequestError) Error() string {
-	return fmt.Sprintf("unhandled request type: %T", e.Request)
 }
 
 func New(
@@ -68,6 +62,8 @@ func New(
 
 		handling: new(sync.WaitGroup),
 		conns:    make(map[net.Conn]net.Conn),
+
+		streamer: streamer.New(time.Minute),
 
 		destroys:  make(map[string]struct{}),
 		destroysL: new(sync.Mutex),
@@ -93,11 +89,18 @@ func New(
 		routes.NetIn:                  http.HandlerFunc(s.handleNetIn),
 		routes.NetOut:                 http.HandlerFunc(s.handleNetOut),
 		routes.Info:                   http.HandlerFunc(s.handleInfo),
+		routes.BulkInfo:               http.HandlerFunc(s.handleBulkInfo),
+		routes.BulkMetrics:            http.HandlerFunc(s.handleBulkMetrics),
 		routes.Run:                    http.HandlerFunc(s.handleRun),
+		routes.Stdout:                 streamer.HandlerFunc(s.streamer.ServeStdout),
+		routes.Stderr:                 streamer.HandlerFunc(s.streamer.ServeStderr),
 		routes.Attach:                 http.HandlerFunc(s.handleAttach),
-		routes.GetProperty:            http.HandlerFunc(s.handleGetProperty),
+		routes.Metrics:                http.HandlerFunc(s.handleMetrics),
+		routes.Properties:             http.HandlerFunc(s.handleProperties),
+		routes.Property:               http.HandlerFunc(s.handleProperty),
 		routes.SetProperty:            http.HandlerFunc(s.handleSetProperty),
 		routes.RemoveProperty:         http.HandlerFunc(s.handleRemoveProperty),
+		routes.SetGraceTime:           http.HandlerFunc(s.handleSetGraceTime),
 	}
 
 	mux, err := rata.NewRouter(routes.Routes, handlers)

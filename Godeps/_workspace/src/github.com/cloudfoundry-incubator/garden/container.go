@@ -1,6 +1,9 @@
 package garden
 
-import "io"
+import (
+	"io"
+	"time"
+)
 
 //go:generate counterfeiter . Container
 
@@ -31,13 +34,13 @@ type Container interface {
 	//
 	// Errors:
 	// *  TODO.
-	StreamIn(dstPath string, tarStream io.Reader) error
+	StreamIn(spec StreamInSpec) error
 
 	// StreamOut streams a file out of a container.
 	//
 	// Errors:
 	// * TODO.
-	StreamOut(srcPath string) (io.ReadCloser, error)
+	StreamOut(spec StreamOutSpec) (io.ReadCloser, error)
 
 	// Limits the network bandwidth for a container.
 	LimitBandwidth(limits BandwidthLimits) error
@@ -56,6 +59,7 @@ type Container interface {
 	//
 	// TODO: explain how disk management works.
 	LimitDisk(limits DiskLimits) error
+
 	CurrentDiskLimits() (DiskLimits, error)
 
 	// Limits the memory usage for a container.
@@ -98,7 +102,6 @@ type Container interface {
 
 	// Run a script inside a container.
 	//
-	// The 'privileged' flag remains for backwards compatibility, but the 'user' flag is preferred.
 	// The root user will be mapped to a non-root UID in the host unless the container (not this process) was created with 'privileged' true.
 	//
 	// Errors:
@@ -109,13 +112,22 @@ type Container interface {
 	//
 	// Errors:
 	// * processID does not refer to a running process.
-	Attach(processID uint32, io ProcessIO) (Process, error)
+	Attach(processID string, io ProcessIO) (Process, error)
 
-	// GetProperty returns the value of the property with the specified name.
+	// Metrics returns the current set of metrics for a container
+	Metrics() (Metrics, error)
+
+	// Sets the grace time.
+	SetGraceTime(graceTime time.Duration) error
+
+	// Properties returns the current set of properties
+	Properties() (Properties, error)
+
+	// Property returns the value of the property with the specified name.
 	//
 	// Errors:
 	// * When the property does not exist on the container.
-	GetProperty(name string) (string, error)
+	Property(name string) (string, error)
 
 	// Set a named property on a container to a specified value.
 	//
@@ -144,10 +156,7 @@ type ProcessSpec struct {
 	// Working directory (default: home directory).
 	Dir string `json:"dir,omitempty"`
 
-	// Whether to run the script as root or not. Can be overriden by 'user', if specified.
-	Privileged bool `json:"privileged,omitempty"`
-
-	// The name of a user in the container to run the process as. If not specified defaults to 'root' for privileged processes, and 'vcap' for unprivileged processes.
+	// The name of a user in the container to run the process as.
 	User string `json:"user,omitempty"`
 
 	// Resource limits
@@ -175,7 +184,7 @@ type ProcessIO struct {
 //go:generate counterfeiter . Process
 
 type Process interface {
-	ID() uint32
+	ID() string
 	Wait() (int, error)
 	SetTTY(TTYSpec) error
 	Signal(Signal) error
@@ -193,21 +202,45 @@ type PortMapping struct {
 	ContainerPort uint32
 }
 
+type StreamInSpec struct {
+	Path      string
+	User      string
+	TarStream io.Reader
+}
+
+type StreamOutSpec struct {
+	Path string
+	User string
+}
+
 // ContainerInfo holds information about a container.
 type ContainerInfo struct {
-	State         string                 // Either "active" or "stopped".
-	Events        []string               // List of events that occurred for the container. It currently includes only "oom" (Out Of Memory) event if it occurred.
-	HostIP        string                 // The IP address of the gateway which controls the host side of the container's virtual ethernet pair.
-	ContainerIP   string                 // The IP address of the container side of the container's virtual ethernet pair.
-	ExternalIP    string                 //
-	ContainerPath string                 // The path to the directory holding the container's files (both its control scripts and filesystem).
-	ProcessIDs    []uint32               // List of running processes.
-	MemoryStat    ContainerMemoryStat    //
-	CPUStat       ContainerCPUStat       //
-	DiskStat      ContainerDiskStat      //
-	BandwidthStat ContainerBandwidthStat //
-	Properties    Properties             // List of properties defined for the container.
-	MappedPorts   []PortMapping          //
+	State         string        // Either "active" or "stopped".
+	Events        []string      // List of events that occurred for the container. It currently includes only "oom" (Out Of Memory) event if it occurred.
+	HostIP        string        // The IP address of the gateway which controls the host side of the container's virtual ethernet pair.
+	ContainerIP   string        // The IP address of the container side of the container's virtual ethernet pair.
+	ExternalIP    string        //
+	ContainerPath string        // The path to the directory holding the container's files (both its control scripts and filesystem).
+	ProcessIDs    []string      // List of running processes.
+	Properties    Properties    // List of properties defined for the container.
+	MappedPorts   []PortMapping //
+}
+
+type ContainerInfoEntry struct {
+	Info ContainerInfo
+	Err  *Error
+}
+
+type Metrics struct {
+	MemoryStat  ContainerMemoryStat
+	CPUStat     ContainerCPUStat
+	DiskStat    ContainerDiskStat
+	NetworkStat ContainerNetworkStat
+}
+
+type ContainerMetricsEntry struct {
+	Metrics Metrics
+	Err     *Error
 }
 
 type ContainerMemoryStat struct {
@@ -239,6 +272,9 @@ type ContainerMemoryStat struct {
 	TotalInactiveFile       uint64
 	TotalActiveFile         uint64
 	TotalUnevictable        uint64
+	// A memory usage total which reports memory usage in the same way that limits are enforced.
+	// This value includes memory consumed by nested containers.
+	TotalUsageTowardLimit uint64
 }
 
 type ContainerCPUStat struct {
@@ -248,8 +284,10 @@ type ContainerCPUStat struct {
 }
 
 type ContainerDiskStat struct {
-	BytesUsed  uint64
-	InodesUsed uint64
+	TotalBytesUsed      uint64
+	TotalInodesUsed     uint64
+	ExclusiveBytesUsed  uint64
+	ExclusiveInodesUsed uint64
 }
 
 type ContainerBandwidthStat struct {
@@ -259,23 +297,24 @@ type ContainerBandwidthStat struct {
 	OutBurst uint64
 }
 
+type ContainerNetworkStat struct {
+	RxBytes uint64
+	TxBytes uint64
+}
+
 type BandwidthLimits struct {
 	RateInBytesPerSecond      uint64 `json:"rate,omitempty"`
 	BurstRateInBytesPerSecond uint64 `json:"burst,omitempty"`
 }
 
 type DiskLimits struct {
-	BlockSoft uint64 `json:"block_soft,omitempty"`
-	BlockHard uint64 `json:"block_hard,omitempty"`
-
 	InodeSoft uint64 `json:"inode_soft,omitempty"`
 	InodeHard uint64 `json:"inode_hard,omitempty"`
 
-	// New soft block limit specified in bytes. Only has effect when BlockSoft is not specified.
 	ByteSoft uint64 `json:"byte_soft,omitempty"`
-
-	// New hard block limit specified in bytes. Only has effect when BlockHard is not specified.
 	ByteHard uint64 `json:"byte_hard,omitempty"`
+
+	Scope DiskLimitScope `json:"scope,omitempty"`
 }
 
 type MemoryLimits struct {
@@ -308,3 +347,8 @@ type ResourceLimits struct {
 	Sigpending *uint64 `json:"sigpending,omitempty"`
 	Stack      *uint64 `json:"stack,omitempty"`
 }
+
+type DiskLimitScope uint8
+
+const DiskLimitScopeTotal DiskLimitScope = 0
+const DiskLimitScopeExclusive DiskLimitScope = 1

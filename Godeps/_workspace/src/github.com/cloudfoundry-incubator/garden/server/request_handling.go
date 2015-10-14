@@ -3,15 +3,34 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/cloudfoundry-incubator/garden"
 	"github.com/cloudfoundry-incubator/garden/transport"
 	"github.com/pivotal-golang/lager"
 )
+
+type processDebugInfo struct {
+	Path   string
+	Dir    string
+	User   string
+	Limits garden.ResourceLimits
+	TTY    *garden.TTYSpec
+}
+
+type containerDebugInfo struct {
+	Handle     string
+	GraceTime  time.Duration
+	RootFSPath string
+	BindMounts []garden.BindMount
+	Network    string
+	Privileged bool
+	Limits     garden.Limits
+}
 
 var ErrInvalidContentType = errors.New("content-type must be application/json")
 var ErrConcurrentDestroy = errors.New("container already being destroyed")
@@ -21,8 +40,7 @@ func (s *GardenServer) handlePing(w http.ResponseWriter, r *http.Request) {
 
 	err := s.backend.Ping()
 	if err != nil {
-		hLog.Error("failed", err)
-		w.WriteHeader(http.StatusServiceUnavailable)
+		s.writeError(w, err, hLog)
 		return
 	}
 
@@ -48,7 +66,15 @@ func (s *GardenServer) handleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hLog := s.logger.Session("create", lager.Data{
-		"request": spec,
+		"request": containerDebugInfo{
+			Handle:     spec.Handle,
+			GraceTime:  spec.GraceTime,
+			RootFSPath: spec.RootFSPath,
+			BindMounts: spec.BindMounts,
+			Network:    spec.Network,
+			Privileged: spec.Privileged,
+			Limits:     spec.Limits,
+		},
 	})
 
 	if spec.GraceTime == 0 {
@@ -80,9 +106,7 @@ func (s *GardenServer) handleList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	hLog := s.logger.Session("list", lager.Data{
-		"properties": properties,
-	})
+	hLog := s.logger.Session("list", lager.Data{})
 
 	containers, err := s.backend.Containers(properties)
 	if err != nil {
@@ -181,10 +205,12 @@ func (s *GardenServer) handleStop(w http.ResponseWriter, r *http.Request) {
 func (s *GardenServer) handleStreamIn(w http.ResponseWriter, r *http.Request) {
 	handle := r.FormValue(":handle")
 
+	user := r.URL.Query().Get("user")
 	dstPath := r.URL.Query().Get("destination")
 
 	hLog := s.logger.Session("stream-in", lager.Data{
 		"handle":      handle,
+		"user":        user,
 		"destination": dstPath,
 	})
 
@@ -199,7 +225,11 @@ func (s *GardenServer) handleStreamIn(w http.ResponseWriter, r *http.Request) {
 
 	hLog.Debug("streaming-in")
 
-	err = container.StreamIn(dstPath, r.Body)
+	err = container.StreamIn(garden.StreamInSpec{
+		User:      user,
+		Path:      dstPath,
+		TarStream: r.Body,
+	})
 	if err != nil {
 		s.writeError(w, err, hLog)
 		return
@@ -217,10 +247,12 @@ func (s *GardenServer) writeSuccess(w http.ResponseWriter) {
 func (s *GardenServer) handleStreamOut(w http.ResponseWriter, r *http.Request) {
 	handle := r.FormValue(":handle")
 
+	user := r.URL.Query().Get("user")
 	srcPath := r.URL.Query().Get("source")
 
 	hLog := s.logger.Session("stream-out", lager.Data{
 		"handle": handle,
+		"user":   user,
 		"source": srcPath,
 	})
 
@@ -235,7 +267,10 @@ func (s *GardenServer) handleStreamOut(w http.ResponseWriter, r *http.Request) {
 
 	hLog.Debug("streaming-out")
 
-	reader, err := container.StreamOut(srcPath)
+	reader, err := container.StreamOut(garden.StreamOutSpec{
+		User: user,
+		Path: srcPath,
+	})
 	if err != nil {
 		s.writeError(w, err, hLog)
 		return
@@ -423,8 +458,7 @@ func (s *GardenServer) handleLimitDisk(w http.ResponseWriter, r *http.Request) {
 	}
 
 	settingLimit := false
-	if request.BlockSoft > 0 || request.BlockHard > 0 ||
-		request.InodeSoft > 0 || request.InodeHard > 0 ||
+	if request.InodeSoft > 0 || request.InodeHard > 0 ||
 		request.ByteSoft > 0 || request.ByteHard > 0 {
 		settingLimit = true
 	}
@@ -656,7 +690,59 @@ func (s *GardenServer) handleNetOut(w http.ResponseWriter, r *http.Request) {
 	s.writeSuccess(w)
 }
 
-func (s *GardenServer) handleGetProperty(w http.ResponseWriter, r *http.Request) {
+func (s *GardenServer) handleMetrics(w http.ResponseWriter, r *http.Request) {
+	handle := r.FormValue(":handle")
+
+	hLog := s.logger.Session("get-metrics", lager.Data{
+		"handle": handle,
+	})
+
+	container, err := s.backend.Lookup(handle)
+	if err != nil {
+		s.writeError(w, err, hLog)
+		return
+	}
+
+	s.bomberman.Pause(container.Handle())
+	defer s.bomberman.Unpause(container.Handle())
+
+	metrics, err := container.Metrics()
+	if err != nil {
+		s.writeError(w, err, hLog)
+		return
+	}
+
+	s.writeResponse(w, metrics)
+}
+
+func (s *GardenServer) handleProperties(w http.ResponseWriter, r *http.Request) {
+	handle := r.FormValue(":handle")
+
+	hLog := s.logger.Session("get-properties", lager.Data{
+		"handle": handle,
+	})
+
+	container, err := s.backend.Lookup(handle)
+	if err != nil {
+		s.writeError(w, err, hLog)
+		return
+	}
+
+	s.bomberman.Pause(container.Handle())
+	defer s.bomberman.Unpause(container.Handle())
+
+	properties, err := container.Properties()
+	if err != nil {
+		s.writeError(w, err, hLog)
+		return
+	}
+
+	hLog.Info("got-properties")
+
+	s.writeResponse(w, properties)
+}
+
+func (s *GardenServer) handleProperty(w http.ResponseWriter, r *http.Request) {
 	handle := r.FormValue(":handle")
 	key := r.FormValue(":key")
 
@@ -673,20 +759,15 @@ func (s *GardenServer) handleGetProperty(w http.ResponseWriter, r *http.Request)
 	s.bomberman.Pause(container.Handle())
 	defer s.bomberman.Unpause(container.Handle())
 
-	hLog.Debug("get-property", lager.Data{
-		"key": key,
-	})
+	hLog.Debug("get-property", lager.Data{})
 
-	value, err := container.GetProperty(key)
+	value, err := container.Property(key)
 	if err != nil {
 		s.writeError(w, err, hLog)
 		return
 	}
 
-	hLog.Info("got-property", lager.Data{
-		"key":   key,
-		"value": value,
-	})
+	hLog.Debug("got-property", lager.Data{})
 
 	s.writeResponse(w, map[string]string{
 		"value": value,
@@ -719,10 +800,7 @@ func (s *GardenServer) handleSetProperty(w http.ResponseWriter, r *http.Request)
 	s.bomberman.Pause(container.Handle())
 	defer s.bomberman.Unpause(container.Handle())
 
-	hLog.Debug("set-property", lager.Data{
-		"key":   key,
-		"value": value,
-	})
+	hLog.Debug("set-property", lager.Data{})
 
 	err = container.SetProperty(key, value)
 	if err != nil {
@@ -730,10 +808,7 @@ func (s *GardenServer) handleSetProperty(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	hLog.Info("set-property-complete", lager.Data{
-		"key":   key,
-		"value": value,
-	})
+	hLog.Debug("set-property-complete", lager.Data{})
 
 	s.writeSuccess(w)
 }
@@ -755,9 +830,7 @@ func (s *GardenServer) handleRemoveProperty(w http.ResponseWriter, r *http.Reque
 	s.bomberman.Pause(container.Handle())
 	defer s.bomberman.Unpause(container.Handle())
 
-	hLog.Debug("remove-property", lager.Data{
-		"key": key,
-	})
+	hLog.Debug("remove-property", lager.Data{})
 
 	err = container.RemoveProperty(key)
 	if err != nil {
@@ -765,9 +838,33 @@ func (s *GardenServer) handleRemoveProperty(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	hLog.Info("removed-property", lager.Data{
-		"key": key,
+	hLog.Info("removed-property", lager.Data{})
+
+	s.writeSuccess(w)
+}
+
+func (s *GardenServer) handleSetGraceTime(w http.ResponseWriter, r *http.Request) {
+	handle := r.FormValue(":handle")
+
+	var graceTime time.Duration
+	if !s.readRequest(&graceTime, w, r) {
+		return
+	}
+
+	hLog := s.logger.Session("set-grace-time", lager.Data{
+		"handle": handle,
 	})
+
+	container, err := s.backend.Lookup(handle)
+	if err != nil {
+		s.writeError(w, err, hLog)
+		return
+	}
+
+	container.SetGraceTime(graceTime)
+
+	s.bomberman.Defuse(container.Handle())
+	s.bomberman.Strap(container)
 
 	s.writeSuccess(w)
 }
@@ -784,6 +881,14 @@ func (s *GardenServer) handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	info := processDebugInfo{
+		Path:   request.Path,
+		Dir:    request.Dir,
+		User:   request.User,
+		Limits: request.Limits,
+		TTY:    request.TTY,
+	}
+
 	container, err := s.backend.Lookup(handle)
 	if err != nil {
 		s.writeError(w, err, hLog)
@@ -794,7 +899,7 @@ func (s *GardenServer) handleRun(w http.ResponseWriter, r *http.Request) {
 	defer s.bomberman.Unpause(container.Handle())
 
 	hLog.Debug("running", lager.Data{
-		"spec": request,
+		"spec": info,
 	})
 
 	stdout := make(chan []byte, 1000)
@@ -813,11 +918,13 @@ func (s *GardenServer) handleRun(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, err, hLog)
 		return
 	}
-
 	hLog.Info("spawned", lager.Data{
-		"spec": request,
+		"spec": info,
 		"id":   process.ID(),
 	})
+
+	streamID := s.streamer.Stream(stdout, stderr)
+	defer s.streamer.Stop(streamID)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
@@ -833,27 +940,22 @@ func (s *GardenServer) handleRun(w http.ResponseWriter, r *http.Request) {
 
 	transport.WriteMessage(conn, &transport.ProcessPayload{
 		ProcessID: process.ID(),
+		StreamID:  string(streamID),
 	})
 
 	go s.streamInput(json.NewDecoder(br), stdinW, process)
 
-	s.streamProcess(hLog, conn, process, stdout, stderr, stdinW)
+	s.streamProcess(hLog, conn, process, stdinW)
 }
 
 func (s *GardenServer) handleAttach(w http.ResponseWriter, r *http.Request) {
 	handle := r.FormValue(":handle")
 
-	var processID uint32
-
 	hLog := s.logger.Session("attach", lager.Data{
 		"handle": handle,
 	})
 
-	_, err := fmt.Sscanf(r.FormValue(":pid"), "%d", &processID)
-	if err != nil {
-		s.writeError(w, err, hLog)
-		return
-	}
+	processID := r.FormValue(":pid")
 
 	container, err := s.backend.Lookup(handle)
 	if err != nil {
@@ -890,6 +992,9 @@ func (s *GardenServer) handleAttach(w http.ResponseWriter, r *http.Request) {
 		"id": process.ID(),
 	})
 
+	streamID := s.streamer.Stream(stdout, stderr)
+	defer s.streamer.Stop(streamID)
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
@@ -902,9 +1007,15 @@ func (s *GardenServer) handleAttach(w http.ResponseWriter, r *http.Request) {
 
 	defer conn.Close()
 
+	transport.WriteMessage(conn, &transport.ProcessPayload{
+		ProcessID: process.ID(),
+		StreamID:  string(streamID),
+	})
+
 	go s.streamInput(json.NewDecoder(br), stdinW, process)
 
-	s.streamProcess(hLog, conn, process, stdout, stderr, stdinW)
+	s.streamProcess(hLog, conn, process, stdinW)
+
 }
 
 func (s *GardenServer) handleInfo(w http.ResponseWriter, r *http.Request) {
@@ -936,17 +1047,52 @@ func (s *GardenServer) handleInfo(w http.ResponseWriter, r *http.Request) {
 	s.writeResponse(w, info)
 }
 
+func (s *GardenServer) handleBulkInfo(w http.ResponseWriter, r *http.Request) {
+	handles := splitHandles(r.URL.Query()["handles"][0])
+
+	hLog := s.logger.Session("bulk_info", lager.Data{
+		"handles": handles,
+	})
+	hLog.Debug("getting-bulkinfo")
+
+	bulkInfo, err := s.backend.BulkInfo(handles)
+	if err != nil {
+		s.writeError(w, err, hLog)
+		return
+	}
+
+	hLog.Info("got-bulkinfo")
+
+	s.writeResponse(w, bulkInfo)
+}
+
+func (s *GardenServer) handleBulkMetrics(w http.ResponseWriter, r *http.Request) {
+	handles := splitHandles(r.URL.Query()["handles"][0])
+
+	hLog := s.logger.Session("bulk_metrics", lager.Data{
+		"handles": handles,
+	})
+	hLog.Debug("getting-bulkmetrics")
+
+	bulkMetrics, err := s.backend.BulkMetrics(handles)
+	if err != nil {
+		s.writeError(w, err, hLog)
+		return
+	}
+
+	hLog.Info("got-bulkinfo")
+
+	s.writeResponse(w, bulkMetrics)
+}
+
 func (s *GardenServer) writeError(w http.ResponseWriter, err error, logger lager.Logger) {
 	logger.Error("failed", err)
 
-	statusCode := http.StatusInternalServerError
-	if _, ok := err.(garden.ContainerNotFoundError); ok {
-		statusCode = http.StatusNotFound
-	}
+	w.Header().Set("Content-Type", "application/json")
+	merr := &garden.Error{Err: err}
 
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(statusCode)
-	w.Write([]byte(err.Error()))
+	w.WriteHeader(merr.StatusCode())
+	json.NewEncoder(w).Encode(merr)
 }
 
 func (s *GardenServer) writeResponse(w http.ResponseWriter, msg interface{}) {
@@ -994,11 +1140,19 @@ func (s *GardenServer) streamInput(decoder *json.Decoder, in *io.PipeWriter, pro
 			}
 
 		case payload.Signal != nil:
+			s.logger.Info("stream-input-process-signal", lager.Data{"payload": payload})
+
 			switch *payload.Signal {
 			case garden.SignalKill:
-				process.Signal(garden.SignalKill)
+				err = process.Signal(garden.SignalKill)
+				if err != nil {
+					s.logger.Error("stream-input-process-signal-kill-failed", err, lager.Data{"payload": payload})
+				}
 			case garden.SignalTerminate:
-				process.Signal(garden.SignalTerminate)
+				err = process.Signal(garden.SignalTerminate)
+				if err != nil {
+					s.logger.Error("stream-input-process-signal-terminate-failed", err, lager.Data{"payload": payload})
+				}
 			default:
 				s.logger.Error("stream-input-unknown-process-payload-signal", nil, lager.Data{"payload": payload})
 				in.Close()
@@ -1013,7 +1167,7 @@ func (s *GardenServer) streamInput(decoder *json.Decoder, in *io.PipeWriter, pro
 	}
 }
 
-func (s *GardenServer) streamProcess(logger lager.Logger, conn net.Conn, process garden.Process, stdout <-chan []byte, stderr <-chan []byte, stdinPipe *io.PipeWriter) {
+func (s *GardenServer) streamProcess(logger lager.Logger, conn net.Conn, process garden.Process, stdinPipe *io.PipeWriter) {
 	statusCh := make(chan int, 1)
 	errCh := make(chan error, 1)
 
@@ -1035,30 +1189,10 @@ func (s *GardenServer) streamProcess(logger lager.Logger, conn net.Conn, process
 		}
 	}()
 
-	stdoutSource := transport.Stdout
-	stderrSource := transport.Stderr
-
 	for {
 		select {
-		case data := <-stdout:
-			d := string(data)
-			transport.WriteMessage(conn, &transport.ProcessPayload{
-				ProcessID: process.ID(),
-				Source:    &stdoutSource,
-				Data:      &d,
-			})
-
-		case data := <-stderr:
-			d := string(data)
-			transport.WriteMessage(conn, &transport.ProcessPayload{
-				ProcessID: process.ID(),
-				Source:    &stderrSource,
-				Data:      &d,
-			})
 
 		case status := <-statusCh:
-			flushProcess(conn, process, stdout, stderr)
-
 			transport.WriteMessage(conn, &transport.ProcessPayload{
 				ProcessID:  process.ID(),
 				ExitStatus: &status,
@@ -1068,8 +1202,6 @@ func (s *GardenServer) streamProcess(logger lager.Logger, conn net.Conn, process
 			return
 
 		case err := <-errCh:
-			flushProcess(conn, process, stdout, stderr)
-
 			e := err.Error()
 			transport.WriteMessage(conn, &transport.ProcessPayload{
 				ProcessID: process.ID(),
@@ -1089,30 +1221,10 @@ func (s *GardenServer) streamProcess(logger lager.Logger, conn net.Conn, process
 	}
 }
 
-func flushProcess(conn net.Conn, process garden.Process, stdout <-chan []byte, stderr <-chan []byte) {
-	stdoutSource := transport.Stdout
-	stderrSource := transport.Stderr
-
-	for {
-		select {
-		case data := <-stdout:
-			d := string(data)
-			transport.WriteMessage(conn, &transport.ProcessPayload{
-				ProcessID: process.ID(),
-				Source:    &stdoutSource,
-				Data:      &d,
-			})
-
-		case data := <-stderr:
-			d := string(data)
-			transport.WriteMessage(conn, &transport.ProcessPayload{
-				ProcessID: process.ID(),
-				Source:    &stderrSource,
-				Data:      &d,
-			})
-
-		default:
-			return
-		}
+func splitHandles(queryHandles string) []string {
+	handles := []string{}
+	if queryHandles != "" {
+		handles = strings.Split(queryHandles, ",")
 	}
+	return handles
 }

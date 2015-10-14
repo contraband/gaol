@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/xoebus/gaol",
-	"GoVersion": "go1.4.1",
+	"GoVersion": "go1.5",
 	"Packages": [
 		"./..."
 	],
@@ -11,8 +11,8 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/garden",
-			"Comment": "go-wshd-692-g535b5aa",
-			"Rev": "535b5aaeca2a19eded827c5a4031145cae96b7ca"
+			"Comment": "go-wshd-800-g295b3b7",
+			"Rev": "295b3b7d64d3a92ec6aba1ebf6a2ad54053e52b7"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
@@ -29,8 +29,8 @@
 			"Rev": "35d512af75e283aae4ca1fc3d44b159ed66189a4"
 		},
 		{
-			"ImportPath": "github.com/pivotal-golang/archiver/compressor",
-			"Rev": "cdabc654f61ff99a82622c888f738c808c38cfa9"
+			"ImportPath": "github.com/pivotal-golang/lager",
+			"Rev": "c88fa6d6c4d2f8a21a4599785211e41777750d34"
 		},
 		{
 			"ImportPath": "github.com/pkg/term",

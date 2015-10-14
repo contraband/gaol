@@ -2,6 +2,7 @@ package client
 
 import (
 	"io"
+	"time"
 
 	"github.com/cloudfoundry-incubator/garden"
 	"github.com/cloudfoundry-incubator/garden/client/connection"
@@ -33,12 +34,12 @@ func (container *container) Info() (garden.ContainerInfo, error) {
 	return container.connection.Info(container.handle)
 }
 
-func (container *container) StreamIn(dstPath string, reader io.Reader) error {
-	return container.connection.StreamIn(container.handle, dstPath, reader)
+func (container *container) StreamIn(spec garden.StreamInSpec) error {
+	return container.connection.StreamIn(container.handle, spec)
 }
 
-func (container *container) StreamOut(srcPath string) (io.ReadCloser, error) {
-	return container.connection.StreamOut(container.handle, srcPath)
+func (container *container) StreamOut(spec garden.StreamOutSpec) (io.ReadCloser, error) {
+	return container.connection.StreamOut(container.handle, spec)
 }
 
 func (container *container) LimitBandwidth(limits garden.BandwidthLimits) error {
@@ -97,7 +98,7 @@ func (container *container) Run(spec garden.ProcessSpec, io garden.ProcessIO) (g
 	return container.connection.Run(container.handle, spec, io)
 }
 
-func (container *container) Attach(processID uint32, io garden.ProcessIO) (garden.Process, error) {
+func (container *container) Attach(processID string, io garden.ProcessIO) (garden.Process, error) {
 	return container.connection.Attach(container.handle, processID, io)
 }
 
@@ -109,8 +110,20 @@ func (container *container) NetOut(netOutRule garden.NetOutRule) error {
 	return container.connection.NetOut(container.handle, netOutRule)
 }
 
-func (container *container) GetProperty(name string) (string, error) {
-	return container.connection.GetProperty(container.handle, name)
+func (container *container) Metrics() (garden.Metrics, error) {
+	return container.connection.Metrics(container.handle)
+}
+
+func (container *container) SetGraceTime(graceTime time.Duration) error {
+	return container.connection.SetGraceTime(container.handle, graceTime)
+}
+
+func (container *container) Properties() (garden.Properties, error) {
+	return container.connection.Properties(container.handle)
+}
+
+func (container *container) Property(name string) (string, error) {
+	return container.connection.Property(container.handle, name)
 }
 
 func (container *container) SetProperty(name string, value string) error {

@@ -53,11 +53,15 @@ func (client *client) Containers(properties garden.Properties) ([]garden.Contain
 func (client *client) Destroy(handle string) error {
 	err := client.connection.Destroy(handle)
 
-	if err, ok := err.(connection.Error); ok && err.StatusCode == 404 {
-		return garden.ContainerNotFoundError{handle}
-	}
-
 	return err
+}
+
+func (client *client) BulkInfo(handles []string) (map[string]garden.ContainerInfoEntry, error) {
+	return client.connection.BulkInfo(handles)
+}
+
+func (client *client) BulkMetrics(handles []string) (map[string]garden.ContainerMetricsEntry, error) {
+	return client.connection.BulkMetrics(handles)
 }
 
 func (client *client) Lookup(handle string) (garden.Container, error) {

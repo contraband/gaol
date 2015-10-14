@@ -8,7 +8,6 @@ import (
 
 	"github.com/cloudfoundry-incubator/garden"
 	. "github.com/cloudfoundry-incubator/garden/client"
-	"github.com/cloudfoundry-incubator/garden/client/connection"
 	"github.com/cloudfoundry-incubator/garden/client/connection/fakes"
 )
 
@@ -54,6 +53,96 @@ var _ = Describe("Client", func() {
 			It("returns the error", func() {
 				_, err := client.Capacity()
 				Ω(err).Should(Equal(disaster))
+			})
+		})
+	})
+
+	Describe("BulkInfo", func() {
+		expectedBulkInfo := map[string]garden.ContainerInfoEntry{
+			"handle1": garden.ContainerInfoEntry{
+				Info: garden.ContainerInfo{
+					State: "container1State",
+				},
+			},
+			"handle2": garden.ContainerInfoEntry{
+				Info: garden.ContainerInfo{
+					State: "container1State",
+				},
+			},
+		}
+		handles := []string{"handle1", "handle2"}
+
+		It("gets info for the requested containers", func() {
+			fakeConnection.BulkInfoReturns(expectedBulkInfo, nil)
+
+			bulkInfo, err := client.BulkInfo(handles)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			Ω(fakeConnection.BulkInfoCallCount()).Should(Equal(1))
+			Ω(fakeConnection.BulkInfoArgsForCall(0)).Should(Equal(handles))
+			Ω(bulkInfo).Should(Equal(expectedBulkInfo))
+		})
+
+		Context("when there is a error with the connection", func() {
+			expectedBulkInfo := map[string]garden.ContainerInfoEntry{}
+
+			BeforeEach(func() {
+				fakeConnection.BulkInfoReturns(expectedBulkInfo, errors.New("Oh noes!"))
+			})
+
+			It("returns the error", func() {
+				_, err := client.BulkInfo(handles)
+				Ω(err).Should(MatchError("Oh noes!"))
+			})
+		})
+	})
+
+	Describe("BulkMetrics", func() {
+		expectedBulkMetrics := map[string]garden.ContainerMetricsEntry{
+			"handle1": garden.ContainerMetricsEntry{
+				Metrics: garden.Metrics{
+					DiskStat: garden.ContainerDiskStat{
+						TotalInodesUsed:     1,
+						TotalBytesUsed:      2,
+						ExclusiveBytesUsed:  3,
+						ExclusiveInodesUsed: 4,
+					},
+				},
+			},
+			"handle2": garden.ContainerMetricsEntry{
+				Metrics: garden.Metrics{
+					DiskStat: garden.ContainerDiskStat{
+						TotalInodesUsed:     5,
+						TotalBytesUsed:      6,
+						ExclusiveBytesUsed:  7,
+						ExclusiveInodesUsed: 8,
+					},
+				},
+			},
+		}
+		handles := []string{"handle1", "handle2"}
+
+		It("gets info for the requested containers", func() {
+			fakeConnection.BulkMetricsReturns(expectedBulkMetrics, nil)
+
+			bulkInfo, err := client.BulkMetrics(handles)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			Ω(fakeConnection.BulkMetricsCallCount()).Should(Equal(1))
+			Ω(fakeConnection.BulkMetricsArgsForCall(0)).Should(Equal(handles))
+			Ω(bulkInfo).Should(Equal(expectedBulkMetrics))
+		})
+
+		Context("when there is a error with the connection", func() {
+			expectedBulkMetrics := map[string]garden.ContainerMetricsEntry{}
+
+			BeforeEach(func() {
+				fakeConnection.BulkMetricsReturns(expectedBulkMetrics, errors.New("Oh noes!"))
+			})
+
+			It("returns the error", func() {
+				_, err := client.BulkMetrics(handles)
+				Ω(err).Should(MatchError("Oh noes!"))
 			})
 		})
 	})
@@ -137,19 +226,6 @@ var _ = Describe("Client", func() {
 			It("returns it", func() {
 				err := client.Destroy("some-handle")
 				Ω(err).Should(Equal(disaster))
-			})
-		})
-
-		Context("when the error is a 404", func() {
-			notFound := connection.Error{404, ""}
-
-			BeforeEach(func() {
-				fakeConnection.DestroyReturns(notFound)
-			})
-
-			It("returns an ContainerNotFoundError with the requested handle", func() {
-				err := client.Destroy("some-handle")
-				Ω(err).Should(MatchError(garden.ContainerNotFoundError{"some-handle"}))
 			})
 		})
 	})

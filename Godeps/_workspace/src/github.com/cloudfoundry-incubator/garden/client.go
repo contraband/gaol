@@ -1,17 +1,14 @@
 package garden
 
-import (
-	"fmt"
-	"time"
-)
+import "time"
 
 //go:generate counterfeiter . Client
-
 type Client interface {
-	// Pings the garden server.
+	// Pings the garden server. Checks connectivity to the server. The server may, optionally, respond with specific
+	// errors indicating health issues.
 	//
 	// Errors:
-	// * None.
+	// * garden.UnrecoverableError indicates that the garden server has entered an error state from which it cannot recover
 	Ping() error
 
 	// Capacity returns the physical capacity of the server's machine.
@@ -48,19 +45,17 @@ type Client interface {
 	// * None.
 	Containers(Properties) ([]Container, error)
 
+	// BulkInfo returns info or error for a list of containers.
+	BulkInfo(handles []string) (map[string]ContainerInfoEntry, error)
+
+	// BulkMetrics returns metrics or error for a list of containers.
+	BulkMetrics(handles []string) (map[string]ContainerMetricsEntry, error)
+
 	// Lookup returns the container with the specified handle.
 	//
 	// Errors:
 	// * Container not found.
 	Lookup(handle string) (Container, error)
-}
-
-type ContainerNotFoundError struct {
-	Handle string
-}
-
-func (err ContainerNotFoundError) Error() string {
-	return fmt.Sprintf("unknown handle: %s", err.Handle)
 }
 
 // ContainerSpec specifies the parameters for creating a container. All parameters are optional.
@@ -145,6 +140,16 @@ type ContainerSpec struct {
 	// is the same as the root user in the host. Otherwise, the container has a user namespace and the root
 	// user in the container is mapped to a non-root user in the host. Defaults to false.
 	Privileged bool `json:"privileged,omitempty"`
+
+	// Limits to be applied to the newly created container.
+	Limits Limits `json:"limits,omitempty"`
+}
+
+type Limits struct {
+	Bandwidth BandwidthLimits `json:"bandwidth_limits,omitempty"`
+	CPU       CPULimits       `json:"cpu_limits,omitempty"`
+	Disk      DiskLimits      `json:"disk_limits,omitempty"`
+	Memory    MemoryLimits    `json:"memory_limits,omitempty"`
 }
 
 // BindMount specifies parameters for a single mount point.

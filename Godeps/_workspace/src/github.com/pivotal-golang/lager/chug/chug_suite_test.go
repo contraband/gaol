@@ -1,4 +1,4 @@
-package compressor_test
+package chug_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCompressor(t *testing.T) {
+func TestChug(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Compressor Suite")
+	RunSpecs(t, "Chug Suite")
 }

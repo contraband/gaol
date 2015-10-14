@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -99,19 +99,82 @@ var _ = Describe("Container", func() {
 		})
 	})
 
+	Describe("Properties", func() {
+		Context("when getting properties succeeds", func() {
+			BeforeEach(func() {
+				fakeConnection.PropertiesReturns(garden.Properties{"Foo": "bar"}, nil)
+			})
+
+			It("returns the properties map", func() {
+				result, err := container.Properties()
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(result).Should(Equal(garden.Properties{"Foo": "bar"}))
+			})
+		})
+
+		Context("when getting properties fails", func() {
+			disaster := errors.New("oh no!")
+
+			BeforeEach(func() {
+				fakeConnection.PropertiesReturns(nil, disaster)
+			})
+
+			It("returns the error", func() {
+				_, err := container.Properties()
+				Ω(err).Should(Equal(disaster))
+			})
+		})
+	})
+
+	Describe("Property", func() {
+
+		propertyName := "propertyName"
+		propertyValue := "propertyValue"
+
+		Context("when getting property succeeds", func() {
+			BeforeEach(func() {
+				fakeConnection.PropertyReturns(propertyValue, nil)
+			})
+
+			It("returns the value", func() {
+				result, err := container.Property(propertyName)
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(result).Should(Equal(propertyValue))
+			})
+		})
+
+		Context("when getting property fails", func() {
+			disaster := errors.New("oh no!")
+
+			BeforeEach(func() {
+				fakeConnection.PropertyReturns("", disaster)
+			})
+
+			It("returns the error", func() {
+				_, err := container.Property(propertyName)
+				Ω(err).Should(Equal(disaster))
+			})
+		})
+	})
+
 	Describe("StreamIn", func() {
 		It("sends a stream in request", func() {
-			fakeConnection.StreamInStub = func(handle string, dst string, reader io.Reader) error {
-				Ω(dst).Should(Equal("to"))
+			fakeConnection.StreamInStub = func(handle string, spec garden.StreamInSpec) error {
+				Ω(spec.Path).Should(Equal("to"))
+				Ω(spec.User).Should(Equal("frank"))
 
-				content, err := ioutil.ReadAll(reader)
+				content, err := ioutil.ReadAll(spec.TarStream)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(string(content)).Should(Equal("stuff"))
 
 				return nil
 			}
 
-			err := container.StreamIn("to", bytes.NewBufferString("stuff"))
+			err := container.StreamIn(garden.StreamInSpec{
+				User:      "frank",
+				Path:      "to",
+				TarStream: bytes.NewBufferString("stuff"),
+			})
 			Ω(err).ShouldNot(HaveOccurred())
 		})
 
@@ -124,7 +187,9 @@ var _ = Describe("Container", func() {
 			})
 
 			It("returns the error", func() {
-				err := container.StreamIn("to", nil)
+				err := container.StreamIn(garden.StreamInSpec{
+					Path: "to",
+				})
 				Ω(err).Should(Equal(disaster))
 			})
 		})
@@ -134,14 +199,18 @@ var _ = Describe("Container", func() {
 		It("sends a stream out request", func() {
 			fakeConnection.StreamOutReturns(ioutil.NopCloser(strings.NewReader("kewl")), nil)
 
-			reader, err := container.StreamOut("from")
+			reader, err := container.StreamOut(garden.StreamOutSpec{
+				User: "deandra",
+				Path: "from",
+			})
 			bytes, err := ioutil.ReadAll(reader)
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(string(bytes)).Should(Equal("kewl"))
 
-			handle, src := fakeConnection.StreamOutArgsForCall(0)
+			handle, spec := fakeConnection.StreamOutArgsForCall(0)
 			Ω(handle).Should(Equal("some-handle"))
-			Ω(src).Should(Equal("from"))
+			Ω(spec.Path).Should(Equal("from"))
+			Ω(spec.User).Should(Equal("deandra"))
 		})
 
 		Context("when streaming out fails", func() {
@@ -152,7 +221,9 @@ var _ = Describe("Container", func() {
 			})
 
 			It("returns the error", func() {
-				_, err := container.StreamOut("from")
+				_, err := container.StreamOut(garden.StreamOutSpec{
+					Path: "from",
+				})
 				Ω(err).Should(Equal(disaster))
 			})
 		})
@@ -322,12 +393,11 @@ var _ = Describe("Container", func() {
 	Describe("CurrentDiskLimits", func() {
 		It("sends an empty limit request and returns its response", func() {
 			limitsToReturn := garden.DiskLimits{
-				BlockSoft: 3,
-				BlockHard: 4,
 				InodeSoft: 7,
 				InodeHard: 8,
 				ByteSoft:  11,
 				ByteHard:  12,
+				Scope:     garden.DiskLimitScopeExclusive,
 			}
 
 			fakeConnection.CurrentDiskLimitsReturns(limitsToReturn, nil)
@@ -385,7 +455,7 @@ var _ = Describe("Container", func() {
 			fakeConnection.RunStub = func(handle string, spec garden.ProcessSpec, io garden.ProcessIO) (garden.Process, error) {
 				process := new(wfakes.FakeProcess)
 
-				process.IDReturns(42)
+				process.IDReturns("process-handle")
 				process.WaitReturns(123, nil)
 
 				go func() {
@@ -421,7 +491,7 @@ var _ = Describe("Container", func() {
 			Ω(ranSpec).Should(Equal(spec))
 			Ω(ranIO).Should(Equal(processIO))
 
-			Ω(process.ID()).Should(Equal(uint32(42)))
+			Ω(process.ID()).Should(Equal("process-handle"))
 
 			status, err := process.Wait()
 			Ω(err).ShouldNot(HaveOccurred())
@@ -434,10 +504,10 @@ var _ = Describe("Container", func() {
 
 	Describe("Attach", func() {
 		It("sends an attach request and returns a stream", func() {
-			fakeConnection.AttachStub = func(handle string, processID uint32, io garden.ProcessIO) (garden.Process, error) {
+			fakeConnection.AttachStub = func(handle string, processID string, io garden.ProcessIO) (garden.Process, error) {
 				process := new(wfakes.FakeProcess)
 
-				process.IDReturns(42)
+				process.IDReturns("process-handle")
 				process.WaitReturns(123, nil)
 
 				go func() {
@@ -461,15 +531,15 @@ var _ = Describe("Container", func() {
 				Stderr: stderr,
 			}
 
-			process, err := container.Attach(42, processIO)
+			process, err := container.Attach("process-handle", processIO)
 			Ω(err).ShouldNot(HaveOccurred())
 
 			attachedHandle, attachedID, attachedIO := fakeConnection.AttachArgsForCall(0)
 			Ω(attachedHandle).Should(Equal("some-handle"))
-			Ω(attachedID).Should(Equal(uint32(42)))
+			Ω(attachedID).Should(Equal("process-handle"))
 			Ω(attachedIO).Should(Equal(processIO))
 
-			Ω(process.ID()).Should(Equal(uint32(42)))
+			Ω(process.ID()).Should(Equal("process-handle"))
 
 			status, err := process.Wait()
 			Ω(err).ShouldNot(HaveOccurred())
@@ -529,6 +599,32 @@ var _ = Describe("Container", func() {
 			Ω(rule.Ports[0]).Should(Equal(garden.PortRange{Start: 12, End: 24}))
 
 			Ω(rule.Log).Should(Equal(true))
+		})
+	})
+
+	Describe(("GraceTime"), func() {
+		It("send the set grace time request", func() {
+			graceTime := time.Second * 5
+
+			Ω(container.SetGraceTime(graceTime)).Should(Succeed())
+
+			Ω(fakeConnection.SetGraceTimeCallCount()).Should(Equal(1))
+			handle, actualGraceTime := fakeConnection.SetGraceTimeArgsForCall(0)
+			Ω(handle).Should(Equal("some-handle"))
+			Ω(actualGraceTime).Should(Equal(graceTime))
+		})
+
+		Context("when the request fails", func() {
+			disaster := errors.New("banana")
+
+			BeforeEach(func() {
+				fakeConnection.SetGraceTimeReturns(disaster)
+			})
+
+			It("returns the error", func() {
+				err := container.SetGraceTime(time.Second * 5)
+				Ω(err).Should(Equal(disaster))
+			})
 		})
 	})
 

@@ -47,8 +47,12 @@ func failIf(err error) {
 }
 
 func client(c *cli.Context) garden.Client {
-	target := c.GlobalString("target")
-	return gclient.New(gconn.New("tcp", target))
+	address := c.GlobalString("target")
+	network := "tcp"
+	if _, err := os.Stat(address); err == nil {
+		network = "unix"
+	}
+	return gclient.New(gconn.New(network, address))
 }
 
 func handle(c *cli.Context) string {
@@ -71,7 +75,7 @@ func main() {
 		cli.StringFlag{
 			Name:   "target, t",
 			Value:  "localhost:7777",
-			Usage:  "server to which commands are sent",
+			Usage:  "server or unix socket to which commands are sent",
 			EnvVar: "GAOL_TARGET",
 		},
 	}

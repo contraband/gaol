@@ -1,6 +1,5 @@
-// Package termios implements the low level termios(3) terminal line discipline facilities.
-//
-// For a higher level interface please use the github.com/pkg/term package.
+// +build !windows
+
 package termios
 
 import (
@@ -17,13 +16,6 @@ const (
 	TCSADRAIN = 1
 	TCSAFLUSH = 2
 )
-
-func ioctl(fd, request, argp uintptr) error {
-	if _, _, e := syscall.Syscall6(syscall.SYS_IOCTL, fd, request, argp, 0, 0, 0); e != 0 {
-		return e
-	}
-	return nil
-}
 
 // Tiocmget returns the state of the MODEM bits.
 func Tiocmget(fd uintptr, status *int) error {

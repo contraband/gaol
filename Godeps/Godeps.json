@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/xoebus/gaol",
-	"GoVersion": "go1.5",
+	"GoVersion": "go1.5.1",
 	"Packages": [
 		"./..."
 	],
@@ -16,25 +16,43 @@
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-66-g6086d79",
-			"Rev": "6086d7927ec35315964d9fea46df6c04e6d697c1"
+			"Comment": "1.2.0-155-g96f1fed",
+			"Rev": "96f1fedb28e10f2e5ad3fd4b7347101529a7ca56"
+		},
+		{
+			"ImportPath": "github.com/fatih/color",
+			"Comment": "v0.1-8-g76d4231",
+			"Rev": "76d423163af754ff6423d2d9be0057fbf03c57c2"
+		},
+		{
+			"ImportPath": "github.com/jessevdk/go-flags",
+			"Comment": "v1-308-g2e3d1bd",
+			"Rev": "2e3d1bd2e1fad797cf2f2fae20cc504998eb93f9"
 		},
 		{
 			"ImportPath": "github.com/kr/pty",
-			"Comment": "release.r56-25-g05017fc",
-			"Rev": "05017fcccf23c823bfdea560dcc958a136e54fb7"
+			"Comment": "release.r56-29-gf7ee69f",
+			"Rev": "f7ee69f31298ecbe5d2b349c711e2547a617d398"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-isatty",
+			"Rev": "7fcbc72f853b92b5720db4a6b8482be612daef24"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-shellwords",
-			"Rev": "35d512af75e283aae4ca1fc3d44b159ed66189a4"
+			"Rev": "f4e566c536cf69158e808ec28ef4182a37fdc981"
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",
-			"Rev": "c88fa6d6c4d2f8a21a4599785211e41777750d34"
+			"Rev": "be52ae622d25728f17aac7330e4565201c19155c"
 		},
 		{
 			"ImportPath": "github.com/pkg/term",
-			"Rev": "e43fe36b3c6c38b682d86badb217aa95d7e86f4b"
+			"Rev": "d7ef5fb23c9838dfaf4731b1dd94aacaedd89181"
+		},
+		{
+			"ImportPath": "github.com/shiena/ansicolor",
+			"Rev": "d445752f6f66f9cd987722f109149f6799cdf1de"
 		},
 		{
 			"ImportPath": "github.com/tedsuo/rata",

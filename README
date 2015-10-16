@@ -24,7 +24,7 @@ scripts and other headless operations.
 All of the commands are documented in the help and usage section of the CLI.
 You can see this by running:
 
-    gaol help
+    gaol --help
 
 Some of the more common commands are:
 

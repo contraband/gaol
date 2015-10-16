@@ -11,7 +11,7 @@ import (
 )
 
 type Shell struct {
-	User string `short:"u" long:"user" description:"user to open shell as"`
+	User string `short:"u" long:"user" description:"user to open shell as" default:"root"`
 }
 
 func (command *Shell) Execute(maybeHandle []string) error {

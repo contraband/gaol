@@ -4,36 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/codegangsta/cli"
-	"github.com/fatih/color"
 	"github.com/jessevdk/go-flags"
-
-	"github.com/cloudfoundry-incubator/garden"
-	gclient "github.com/cloudfoundry-incubator/garden/client"
-	gconn "github.com/cloudfoundry-incubator/garden/client/connection"
 
 	"github.com/xoebus/gaol/commands"
 )
-
-func fail(err error) {
-	fmt.Fprintln(os.Stderr, color.RedString("error:"), err)
-	os.Exit(1)
-}
-
-func failIf(err error) {
-	if err != nil {
-		fail(err)
-	}
-}
-
-func client(c *cli.Context) garden.Client {
-	address := c.GlobalString("target")
-	network := "tcp"
-	if _, err := os.Stat(address); err == nil {
-		network = "unix"
-	}
-	return gclient.New(gconn.New(network, address))
-}
 
 type command struct {
 	name        string
@@ -64,7 +38,10 @@ func main() {
 			"",
 			command.command,
 		)
-		failIf(err)
+
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	_, err := parser.Parse()

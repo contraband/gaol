@@ -12,7 +12,7 @@ type Run struct {
 	Attach  bool     `short:"a" long:"attach" description:"attach to the process after it has started"`
 	Dir     string   `short:"d" long:"dir" description:"current working directory of process"`
 	User    string   `short:"u" long:"user" description:"user to run the process as"`
-	Command string   `short:"g" long:"grace" description:"grace time (resetting ttl) of container"`
+	Command string   `short:"c" long:"command" description:"command to run in container"`
 	Env     []string `short:"e" long:"env" description:"set environment variables"`
 }
 

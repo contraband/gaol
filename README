@@ -16,7 +16,7 @@ scripts and other headless operations.
 
 = installation
 
-    go get github.com/xoebus/gaol
+    go get github.com/contraband/gaol
 
 
 = usage

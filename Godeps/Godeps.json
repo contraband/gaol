@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/xoebus/gaol",
+	"ImportPath": "github.com/contraband/gaol",
 	"GoVersion": "go1.5.1",
 	"Packages": [
 		"./..."

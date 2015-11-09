@@ -11,18 +11,18 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/garden",
-			"Comment": "go-wshd-800-g295b3b7",
-			"Rev": "295b3b7d64d3a92ec6aba1ebf6a2ad54053e52b7"
+			"Comment": "go-wshd-803-g82ff031",
+			"Rev": "82ff031e787b461f85791f654938e631970f87ad"
 		},
 		{
 			"ImportPath": "github.com/fatih/color",
-			"Comment": "v0.1-8-g76d4231",
-			"Rev": "76d423163af754ff6423d2d9be0057fbf03c57c2"
+			"Comment": "v0.1-10-g8640971",
+			"Rev": "8640971291e54b520f781270275b7ed8762ac909"
 		},
 		{
 			"ImportPath": "github.com/jessevdk/go-flags",
-			"Comment": "v1-308-g2e3d1bd",
-			"Rev": "2e3d1bd2e1fad797cf2f2fae20cc504998eb93f9"
+			"Comment": "v1-322-gfc93116",
+			"Rev": "fc93116606d0a71d7e9de0ad5734fdb4b8eae834"
 		},
 		{
 			"ImportPath": "github.com/kr/pty",
@@ -31,15 +31,16 @@
 		},
 		{
 			"ImportPath": "github.com/mattn/go-isatty",
-			"Rev": "7fcbc72f853b92b5720db4a6b8482be612daef24"
+			"Rev": "d6aaa2f596ae91a0a58d8e7f2c79670991468e4f"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-shellwords",
+			"Comment": "v1.0.0",
 			"Rev": "f4e566c536cf69158e808ec28ef4182a37fdc981"
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",
-			"Rev": "be52ae622d25728f17aac7330e4565201c19155c"
+			"Rev": "95b2ada4cdf781bdcf07e5207879e034ac8c5314"
 		},
 		{
 			"ImportPath": "github.com/pkg/term",

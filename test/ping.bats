@@ -8,7 +8,7 @@ load test_helper
   assert_success
 }
 
-@test "pinging an inactive garden server succeeds" {
+@test "pinging an inactive garden server fails" {
   run gaol -t garden.example.com:7777 ping
 
   assert_failure

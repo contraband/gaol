@@ -5,7 +5,7 @@ workspace=$(mktemp -d)
 for platform in linux darwin; do
   echo "building ${platform}..."
   env GOOS=${platform} GOARCH=amd64 CGO_ENABLED=0 \
-    go build -o ${workspace}/fly_${platform} github.com/contraband/gaol
+    go build -o ${workspace}/gaol_${platform} github.com/contraband/gaol
 done
 
 open ${workspace}

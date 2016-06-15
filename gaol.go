@@ -29,6 +29,7 @@ func main() {
 		{"stream-in", "stream data into the container", &commands.StreamIn{}},
 		{"stream-out", "stream data out of the container", &commands.StreamOut{}},
 		{"net-in", "map a port on the host to a port in the container", &commands.NetIn{}},
+		{"net-out", "whitelist an IP and port range for a container", &commands.NetOut{}},
 	}
 
 	for _, command := range commands {

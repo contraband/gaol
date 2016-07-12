@@ -48,7 +48,7 @@ Some of the more common commands are:
     $ gaol shell $(gaol create)
 
     # copying files into a container
-    $ tar cf file.txt | gaol stream-in conabc123 --destination /etc/file.txt
+    $ tar c file.txt | gaol stream-in conabc123 --destination /etc/file.txt
 
     # copying files from one container to another
     $ gaol stream-out abc -s ./foo | gaol stream-in def -d ./foo

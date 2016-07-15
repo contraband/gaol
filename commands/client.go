@@ -1,9 +1,9 @@
 package commands
 
 import (
-	"github.com/cloudfoundry-incubator/garden"
-	gclient "github.com/cloudfoundry-incubator/garden/client"
-	gconn "github.com/cloudfoundry-incubator/garden/client/connection"
+	"code.cloudfoundry.org/garden"
+	gclient "code.cloudfoundry.org/garden/client"
+	gconn "code.cloudfoundry.org/garden/client/connection"
 )
 
 func globalClient() garden.Client {

@@ -3,7 +3,7 @@ package commands
 import (
 	"os"
 
-	"github.com/cloudfoundry-incubator/garden"
+	"code.cloudfoundry.org/garden"
 )
 
 type Attach struct {

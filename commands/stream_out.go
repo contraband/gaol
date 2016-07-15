@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/cloudfoundry-incubator/garden"
+	"code.cloudfoundry.org/garden"
 )
 
 type StreamOut struct {

@@ -23,7 +23,7 @@ func (command *Properties) Execute(maybeHandle []string) error {
 		os.Stdout.Write(toPrint)
 	} else {
 		for k, v := range properties {
-			fmt.Printf("%s:%s\n", k, v)
+			fmt.Printf("%s\t%s\n", k, v)
 		}
 	}
 

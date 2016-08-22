@@ -6,15 +6,16 @@
 
 [![Apache 2.0 License](https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat-square)](/LICENSE)
 
+<br />
 
-# about
+## about
 
 Gaol is a simple, fast, and composable CLI for the Garden container server. It
 is designed to be used with other command line tools. It is suitable for use in
 scripts and other headless operations.
 
 
-# installation
+## installation
 
 Download the latest binary from the [releases page][releases], make it
 executable, and put it somewhere in your path.
@@ -22,7 +23,7 @@ executable, and put it somewhere in your path.
 [releases]: https://github.com/contraband/gaol/releases
 
 
-# usage
+## usage
 
 All of the commands are documented in the help and usage section of the CLI.
 You can see this by running:
@@ -60,7 +61,7 @@ Some of the more common commands are:
     $ gaol list | xargs gaol destroy
 
 
-# links
+## links
 
 Garden
 https://github.com/cloudfoundry/garden

@@ -2,7 +2,7 @@
 
 # gaol
 
-> *A CLI for Garden (pronounced 'jail')*
+> *A CLI for Garden*
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](/LICENSE)
 

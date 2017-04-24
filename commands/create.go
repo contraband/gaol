@@ -9,13 +9,14 @@ import (
 )
 
 type Create struct {
-	Handle     string        `short:"n" long:"handle" description:"name to give container"`
-	RootFS     string        `short:"r" long:"rootfs" description:"rootfs image with which to create the container"`
-	Env        []string      `short:"e" long:"env" description:"set environment variables"`
-	Grace      time.Duration `short:"g" long:"grace" description:"grace time (resetting ttl) of container"`
-	Privileged bool          `short:"p" long:"privileged" description:"privileged user in the container is privileged in the host"`
-	Network    string        `long:"network" description:"the subnet of the container"`
-	BindMounts []string      `short:"m" long:"bind-mount" description:"bind mount host-path:container-path"`
+	Handle      string        `short:"n" long:"handle" description:"name to give container"`
+	RootFS      string        `short:"r" long:"rootfs" description:"rootfs image with which to create the container"`
+	Env         []string      `short:"e" long:"env" description:"set environment variables"`
+	Grace       time.Duration `short:"g" long:"grace" description:"grace time (resetting ttl) of container"`
+	Privileged  bool          `short:"p" long:"privileged" description:"privileged user in the container is privileged in the host"`
+	Network     string        `long:"network" description:"the subnet of the container"`
+	BindMounts  []string      `short:"m" long:"bind-mount" description:"bind mount host-path:container-path"`
+	LimitMemory uint64        `short:"k" long:"limit-memory" description:"limits the memory used by the container. Value in bytes"`
 }
 
 func (command *Create) Execute(args []string) error {
@@ -43,6 +44,11 @@ func (command *Create) Execute(args []string) error {
 		Env:        command.Env,
 		Network:    command.Network,
 		BindMounts: bindMounts,
+		Limits: garden.Limits{
+			Memory: garden.MemoryLimits{
+				LimitInBytes: command.LimitMemory,
+			},
+		},
 	})
 
 	failIf(err)

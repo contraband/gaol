@@ -17,6 +17,9 @@ func (command *Properties) Execute(maybeHandle []string) error {
 	properties, err := container.Properties()
 	failIf(err)
 
+	memoryLimits, err := container.CurrentMemoryLimits()
+	failIf(err)
+
 	if command.AsJSON {
 		toPrint, err := json.MarshalIndent(properties, "", "  ")
 		failIf(err)
@@ -25,6 +28,7 @@ func (command *Properties) Execute(maybeHandle []string) error {
 		for k, v := range properties {
 			fmt.Printf("%s\t%s\n", k, v)
 		}
+		fmt.Printf("memory.limit\t%d bytes\n", memoryLimits.LimitInBytes)
 	}
 
 	return nil

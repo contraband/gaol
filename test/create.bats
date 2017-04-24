@@ -31,4 +31,3 @@ load test_helper
   assert_success
   assert_match $handle
 }
-

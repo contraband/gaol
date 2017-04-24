@@ -8,4 +8,4 @@ for platform in linux darwin; do
     go build -o ${workspace}/gaol_${platform} github.com/contraband/gaol
 done
 
-open ${workspace}
+echo Output is in "${workspace}"

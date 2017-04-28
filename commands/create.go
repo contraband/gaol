@@ -11,6 +11,8 @@ import (
 type Create struct {
 	Handle     string        `short:"n" long:"handle" description:"name to give container"`
 	RootFS     string        `short:"r" long:"rootfs" description:"rootfs image with which to create the container"`
+	Username   string        `long:"username" description:"username for private registry"`
+	Password   string        `long:"password" description:"password for private registry"`
 	Env        []string      `short:"e" long:"env" description:"set environment variables"`
 	Grace      time.Duration `short:"g" long:"grace" description:"grace time (resetting ttl) of container"`
 	Privileged bool          `short:"p" long:"privileged" description:"privileged user in the container is privileged in the host"`
@@ -38,7 +40,7 @@ func (command *Create) Execute(args []string) error {
 	container, err := globalClient().Create(garden.ContainerSpec{
 		Handle:     command.Handle,
 		GraceTime:  command.Grace,
-		RootFSPath: command.RootFS,
+		Image:      garden.ImageRef{URI: command.RootFS, Username: command.Username, Password: command.Password},
 		Privileged: command.Privileged,
 		Env:        command.Env,
 		Network:    command.Network,

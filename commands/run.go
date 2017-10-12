@@ -14,6 +14,7 @@ type Run struct {
 	User    string   `short:"u" long:"user" description:"user to run the process as" default:"root"`
 	Command string   `short:"c" long:"command" description:"command to run in container"`
 	Env     []string `short:"e" long:"env" description:"set environment variables"`
+	Image   string   `short:"i" long:"image" description:"Root filesystem for process"`
 }
 
 func (command *Run) Execute(maybeHandle []string) error {
@@ -36,11 +37,12 @@ func (command *Run) Execute(maybeHandle []string) error {
 	failIf(err)
 
 	process, err := container.Run(garden.ProcessSpec{
-		Path: args[0],
-		Args: args[1:],
-		Dir:  command.Dir,
-		User: command.User,
-		Env:  command.Env,
+		Path:  args[0],
+		Args:  args[1:],
+		Dir:   command.Dir,
+		User:  command.User,
+		Env:   command.Env,
+		Image: garden.ImageRef{URI: command.Image},
 	}, processIo)
 	failIf(err)
 

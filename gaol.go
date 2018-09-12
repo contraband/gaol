@@ -31,6 +31,7 @@ func main() {
 		{"net-in", "map a port on the host to a port in the container", &commands.NetIn{}},
 		{"net-out", "whitelist an IP and port range for a container", &commands.NetOut{}},
 		{"properties", "list properties for a container", &commands.Properties{}},
+		{"set-gracetime", "set the grace time for a container", &commands.SetGraceTime{}},
 	}
 
 	for _, command := range commands {

@@ -62,7 +62,7 @@ type Container interface {
 	// pool.
 	//
 	// If a container port is not given, the port will be the same as the
-	// container port.
+	// host port.
 	//
 	// The resulting host and container ports are returned in that order.
 	//
@@ -156,12 +156,19 @@ type ProcessSpec struct {
 	// Resource limits
 	Limits ResourceLimits `json:"rlimits,omitempty"`
 
+	// Limits to be applied to the newly created process
+	OverrideContainerLimits *ProcessLimits `json:"limits,omitempty"`
+
 	// Execute with a TTY for stdio.
 	TTY *TTYSpec `json:"tty,omitempty"`
 
 	// Execute process in own root filesystem, different from the other processes
 	// in the container.
 	Image ImageRef `json:"image,omitempty"`
+
+	// Bind mounts to be applied to the process's filesystem
+	// An error is returned if ProcessSpec.Image is not also set.
+	BindMounts []BindMount `json:"bind_mounts,omitempty"`
 }
 
 type TTYSpec struct {
@@ -230,10 +237,13 @@ type ContainerInfoEntry struct {
 }
 
 type Metrics struct {
-	MemoryStat  ContainerMemoryStat
-	CPUStat     ContainerCPUStat
-	DiskStat    ContainerDiskStat
-	NetworkStat ContainerNetworkStat
+	MemoryStat     ContainerMemoryStat
+	CPUStat        ContainerCPUStat
+	DiskStat       ContainerDiskStat
+	NetworkStat    ContainerNetworkStat
+	PidStat        ContainerPidStat
+	Age            time.Duration
+	CPUEntitlement uint64
 }
 
 type ContainerMetricsEntry struct {
@@ -281,6 +291,11 @@ type ContainerCPUStat struct {
 	System uint64
 }
 
+type ContainerPidStat struct {
+	Current uint64
+	Max     uint64
+}
+
 type ContainerDiskStat struct {
 	TotalBytesUsed      uint64
 	TotalInodesUsed     uint64
@@ -305,6 +320,11 @@ type BandwidthLimits struct {
 	BurstRateInBytesPerSecond uint64 `json:"burst,omitempty"`
 }
 
+type ProcessLimits struct {
+	CPU    CPULimits    `json:"cpu_limits,omitempty"`
+	Memory MemoryLimits `json:"memory_limits,omitempty"`
+}
+
 type DiskLimits struct {
 	InodeSoft uint64 `json:"inode_soft,omitempty"`
 	InodeHard uint64 `json:"inode_hard,omitempty"`
@@ -321,6 +341,8 @@ type MemoryLimits struct {
 }
 
 type CPULimits struct {
+	Weight uint64 `json:"weight,omitempty"`
+	// Deprecated: Use Weight instead.
 	LimitInShares uint64 `json:"limit_in_shares,omitempty"`
 }
 

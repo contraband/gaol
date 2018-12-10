@@ -1,39 +1,45 @@
 {
 	"ImportPath": "github.com/contraband/gaol",
-	"GoVersion": "go1.9",
-	"GodepVersion": "v79",
+	"GoVersion": "go1.11",
+	"GodepVersion": "v80",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
 		{
 			"ImportPath": "code.cloudfoundry.org/garden",
-			"Comment": "go-wshd-882-gb2dfd6f",
-			"Rev": "b2dfd6fe164a582c2b1c9dbdd2781d123d2622b4"
+			"Comment": "go-wshd-916-g62470dc",
+			"Rev": "62470dc86365fb365be099df5c4b59650d695c4b"
 		},
 		{
 			"ImportPath": "code.cloudfoundry.org/garden/client",
-			"Comment": "go-wshd-882-gb2dfd6f",
-			"Rev": "b2dfd6fe164a582c2b1c9dbdd2781d123d2622b4"
+			"Comment": "go-wshd-916-g62470dc",
+			"Rev": "62470dc86365fb365be099df5c4b59650d695c4b"
 		},
 		{
 			"ImportPath": "code.cloudfoundry.org/garden/client/connection",
-			"Comment": "go-wshd-882-gb2dfd6f",
-			"Rev": "b2dfd6fe164a582c2b1c9dbdd2781d123d2622b4"
+			"Comment": "go-wshd-916-g62470dc",
+			"Rev": "62470dc86365fb365be099df5c4b59650d695c4b"
 		},
 		{
 			"ImportPath": "code.cloudfoundry.org/garden/routes",
-			"Comment": "go-wshd-882-gb2dfd6f",
-			"Rev": "b2dfd6fe164a582c2b1c9dbdd2781d123d2622b4"
+			"Comment": "go-wshd-916-g62470dc",
+			"Rev": "62470dc86365fb365be099df5c4b59650d695c4b"
 		},
 		{
 			"ImportPath": "code.cloudfoundry.org/garden/transport",
-			"Comment": "go-wshd-882-gb2dfd6f",
-			"Rev": "b2dfd6fe164a582c2b1c9dbdd2781d123d2622b4"
+			"Comment": "go-wshd-916-g62470dc",
+			"Rev": "62470dc86365fb365be099df5c4b59650d695c4b"
 		},
 		{
 			"ImportPath": "code.cloudfoundry.org/lager",
-			"Rev": "0bfa98e49e7a976af91e918d47978f07c00b081f"
+			"Comment": "v1.1.0-6-gbaf208c",
+			"Rev": "baf208c4c56b0a06ddec4a03c0348d072261d43a"
+		},
+		{
+			"ImportPath": "code.cloudfoundry.org/lager/internal/truncate",
+			"Comment": "v1.1.0-6-gbaf208c",
+			"Rev": "baf208c4c56b0a06ddec4a03c0348d072261d43a"
 		},
 		{
 			"ImportPath": "github.com/bmizerany/pat",
@@ -41,41 +47,41 @@
 		},
 		{
 			"ImportPath": "github.com/fatih/color",
-			"Comment": "v1.5.0-8-g5df930a",
-			"Rev": "5df930a27be2502f99b292b7cc09ebad4d0891f4"
+			"Comment": "v1.7.0-5-g3f9d52f",
+			"Rev": "3f9d52f7176a6927daacff70a3e8d1dc2025c53e"
 		},
 		{
 			"ImportPath": "github.com/jessevdk/go-flags",
-			"Comment": "v1.3.0-5-gf88afde",
-			"Rev": "f88afde2fa19a30cf50ba4b05b3d13bc6bae3079"
+			"Comment": "v1.4.0-40-g5de817a",
+			"Rev": "5de817a9aa209ed35a164cb04aec82b7df1a47a6"
 		},
 		{
 			"ImportPath": "github.com/kr/pty",
-			"Comment": "v1.0.1",
-			"Rev": "95d05c1eef33a45bd58676b6ce28d105839b8d0b"
+			"Comment": "v1.1.3",
+			"Rev": "db8e3cd836b82e82e0a9c8edc6896967dd31374f"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-colorable",
-			"Comment": "v0.0.9-6-gad5389d",
-			"Rev": "ad5389df28cdac544c99bd7b9161a0b5b6ca9d1b"
+			"Comment": "v0.0.9-14-gefa5899",
+			"Rev": "efa589957cd060542a26d2dd7832fd6a6c6c3ade"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-isatty",
-			"Comment": "v0.0.3-1-ga5cdd64",
-			"Rev": "a5cdd64afdee435007ee3e9f6ed4684af949d568"
+			"Comment": "v0.0.4-6-g3fb116b",
+			"Rev": "3fb116b820352b7f0c281308a4d6250c22d94e27"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-shellwords",
-			"Comment": "v1.0.3-11-g95c860c",
-			"Rev": "95c860c1895b21b58903abdd1d9c591560b0601c"
+			"Comment": "v1.0.3-22-g3c0603f",
+			"Rev": "3c0603ff9671145648171317c30371d805656003"
 		},
 		{
 			"ImportPath": "github.com/pkg/term",
-			"Rev": "b1f72af2d63057363398bec5873d16a98b453312"
+			"Rev": "27bbf2edb814447174b568fc0875a8e0c1608fae"
 		},
 		{
 			"ImportPath": "github.com/pkg/term/termios",
-			"Rev": "b1f72af2d63057363398bec5873d16a98b453312"
+			"Rev": "27bbf2edb814447174b568fc0875a8e0c1608fae"
 		},
 		{
 			"ImportPath": "github.com/tedsuo/rata",
@@ -84,7 +90,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "92ac112afc6efd90284acda2b046fc0e351228f6"
+			"Rev": "2a47403f2ae58167c4d75973960ccc62b28cb0d8"
 		}
 	]
 }

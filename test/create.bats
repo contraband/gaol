@@ -24,7 +24,7 @@ load test_helper
 }
 
 @test "a created container bind mount is read-write by default" {
-  handle=$(gaol create -m .:/tmp/cmnt)
+  handle=$(gaol create -m /bin:/tmp/cmnt)
   assert_success
 
   run gaol run -a -c "/bin/sh -c 'cat /proc/self/mounts | grep /tmp/cmnt'" $handle
@@ -34,7 +34,7 @@ load test_helper
 }
 
 @test "a created container can have read-only bind mounts" {
-  handle=$(gaol create -m .:/tmp/cmnt:ro)
+  handle=$(gaol create -m /bin:/tmp/cmnt:ro)
   assert_success
 
   run gaol run -a -c "/bin/sh -c 'cat /proc/self/mounts | grep /tmp/cmnt'" $handle
@@ -45,7 +45,7 @@ load test_helper
 
 
 @test "a created container can have explicit read-write bind mounts" {
-  handle=$(gaol create -m .:/tmp/cmnt:rw)
+  handle=$(gaol create -m /bin:/tmp/cmnt:rw)
   assert_success
 
   run gaol run -a -c "/bin/sh -c 'cat /proc/self/mounts | grep /tmp/cmnt'" $handle

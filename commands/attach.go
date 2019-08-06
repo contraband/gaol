@@ -22,8 +22,9 @@ func (command *Attach) Execute(maybeHandle []string) error {
 	})
 	failIf(err)
 
-	_, err = process.Wait()
+	status, err := process.Wait()
 	failIf(err)
+	os.Exit(status)
 
 	return nil
 }
